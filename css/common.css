@@ -1,0 +1,14 @@
+@charset "utf-8";
+html,body {
+    background-color:#000000;
+    margin:0 auto;
+    padding:0;
+    -webkit-text-size-adjust: none;
+    width:640px;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+}
+.debug {
+    outline:1px solid #0000ff;
+}
