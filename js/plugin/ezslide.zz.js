@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.1
+ * @version       0.0.2
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -12,10 +12,19 @@ var ezslide = new function() {
      * @param {String} id
      * @param {String[]} imageUrls
      */
-    function setSlideImages(id, imageUrls) {
-        var interval = 5000;
+    function setSlideImages(id, imageUrls, _interval, _easing, _elapsedTime) {
+        var interval = 3000;
+        if (_interval) {
+            interval = _interval;
+        }
         var easing = "ease-out";
+        if (_easing) {
+            easing = _easing;
+        }
         var elapsedTime = 0.5;
+        if (_elapsedTime) {
+            elapsedTime = _elapsedTime;
+        }
 
         var root = new zz.Stage(id);
         var width = root.width;
@@ -30,10 +39,19 @@ var ezslide = new function() {
         var size = container.numChildren;
         var handle = null;
 
-
-        function setPosition() {
+        function stopTransition() {
             container.style[zz.ENV.VENDER_PREFIX + "TransitionDuration"] = null;
             container.style[zz.ENV.VENDER_PREFIX + "TransitionTimingFunction"] = null;
+        }
+
+        function startTransition() {
+            container.style[zz.ENV.VENDER_PREFIX + "TransitionDuration"] = elapsedTime + "s";
+            container.style[zz.ENV.VENDER_PREFIX + "TransitionTimingFunction"] = easing;
+        }
+
+        function setPosition() {
+            stopTransition();
+            root.removeEventListener(zz.Event.ENTER_FRAME, setPosition);
             if (index < 0) {
                 index = size - 1;
             } else if (index >= size) {
@@ -122,7 +140,7 @@ var ezslide = new function() {
             touch = false;
             lock = false;
             if (Math.abs(container.x) <= 2) {
-                setPosition();
+                root.addEventListener(zz.Event.ENTER_FRAME, setPosition);
                 return true;
             }
             var threshold = 20;
@@ -136,16 +154,14 @@ var ezslide = new function() {
             } else {
                 container.x = 0;
             }
-            container.style[zz.ENV.VENDER_PREFIX + "TransitionDuration"] = elapsedTime + "s";
-            container.style[zz.ENV.VENDER_PREFIX + "TransitionTimingFunction"] = easing;
+            startTransition();
         }
         root.addEventListener(zz.TouchEvent.TOUCH_UP, touchRelease);
         //root.addEventListener(zz.TouchEvent.TOUCH_OUT, touchRelease);
 
         function slideShow() {
             ++index;
-            container.style[zz.ENV.VENDER_PREFIX + "TransitionDuration"] = elapsedTime + "s";
-            container.style[zz.ENV.VENDER_PREFIX + "TransitionTimingFunction"] = easing;
+            startTransition();
             container.x = -width;
             stopSlideShow();
         }
