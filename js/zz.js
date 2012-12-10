@@ -101,7 +101,7 @@ var zz = new function() {
             RENDERING_ENGINE: engine,
             VENDER_PREFIX: about.prefix,
             MODEL: about.model,
-            VERSION: about.model,
+            VERSION: about.version,
             TOUCH_ENABLED: typeof div.ontouchstart === "function"
         }
 
