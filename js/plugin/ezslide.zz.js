@@ -157,7 +157,7 @@ var ezslide = new function() {
             startTransition();
         }
         root.addEventListener(zz.TouchEvent.TOUCH_UP, touchRelease);
-        //root.addEventListener(zz.TouchEvent.TOUCH_OUT, touchRelease);
+        root.addEventListener(zz.TouchEvent.TOUCH_OUT, touchRelease);
 
         function slideShow() {
             ++index;

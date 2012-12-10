@@ -747,7 +747,9 @@ var zz = new function() {
         }
         _Stage.prototype = createClass(DisplayObjectContainer.prototype, {
             start: function() {
-                this.onEnterFrame();
+                if (!this.running) {
+                    this.onEnterFrame();
+                }
             },
             pause: function() {
                 clearTimeout(this.handle);
