@@ -3,13 +3,11 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.5
+ * @version       0.0.6
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
-/**
- * @static
- */
+
 var zz = new function() {
 
     /// default frame rate
@@ -109,7 +107,7 @@ var zz = new function() {
 
     var ANDROID = ENV.OS == "Android";
     var VENDER_PREFIX = ENV.VENDER_PREFIX;
-    var DISPLAY = {
+    var ReferencePoint = {
         TOP: 1,
         BOTTOM: 2,
         MIDDLE: 3,
@@ -117,24 +115,22 @@ var zz = new function() {
         RIGHT: 8,
         CENTER: 12
     };
-     // DISPLAY is deprecated.
-    var REFERENCE_POINT = DISPLAY;
 
     /**
-     * @param {Object} base
-     * @param {Object} definition
+     * @param {Object} superClass
+     * @param {Object} properties
      */
-    var createClass = function(base, definition) {
-        for (var property in definition) if (definition.hasOwnProperty(property)) {
-            if (typeof definition[property] == "function") {
-                definition[property] = {
+    var createClass = function(superClass, properties) {
+        for (var property in properties) if (properties.hasOwnProperty(property)) {
+            if (typeof properties[property] == "function") {
+                properties[property] = {
                     writable: true,
                     enumerable: true,
-                    value: definition[property],
+                    value: properties[property],
                 };
             }
         }
-        return Object.create(base, definition);
+        return Object.create(superClass.prototype, properties);
     }
 
     /**
@@ -185,6 +181,14 @@ var zz = new function() {
             }
         }
     }
+
+    /**
+     * FullScreen Mode
+     */
+    var StageDisplayState = {
+        NORMAL: "normal",
+        FULL_SCREEN: "fullscreen"
+    };
 
     /**
      * @class EventDispatcher
@@ -299,7 +303,7 @@ var zz = new function() {
             this.referenceX = 0;  // percentage
             this.referenceY = 0;  // percentage
             this._reference = null;
-            this.referencePoint = REFERENCE_POINT.LEFT | REFERENCE_POINT.TOP;
+            this.referencePoint = ReferencePoint.LEFT | ReferencePoint.TOP;
             this.enabled = true;
             var self = this;
 
@@ -331,7 +335,7 @@ var zz = new function() {
             }
         }
 
-        _DisplayObject.prototype = createClass(EventDispatcher.prototype, {
+        _DisplayObject.prototype = createClass(EventDispatcher, {
             transform: function() {
                 this.style[VENDER_PREFIX + "Transform"] = [
                     "translate(" + this._x + "px," + this._y + "px)",
@@ -504,20 +508,20 @@ var zz = new function() {
             referencePoint: {
                 set: function(point) {
                     this._reference = point;
-                    if ((point & REFERENCE_POINT.CENTER) == REFERENCE_POINT.CENTER) {
+                    if ((point & ReferencePoint.CENTER) == ReferencePoint.CENTER) {
                         this.referenceX = 50;
                         this.style.left = -~~(this._width / 2) + "px";
-                    } else if ((point & REFERENCE_POINT.RIGHT) == REFERENCE_POINT.RIGHT) {
+                    } else if ((point & ReferencePoint.RIGHT) == ReferencePoint.RIGHT) {
                         this.referenceX = 100;
                         this.style.left = -this._width + "px";
                     } else {
                         this.referenceX = 0;
                         this.style.left = "0px";
                     }
-                    if ((point & REFERENCE_POINT.MIDDLE) == REFERENCE_POINT.MIDDLE || point == REFERENCE_POINT.CENTER) {
+                    if ((point & ReferencePoint.MIDDLE) == ReferencePoint.MIDDLE || point == ReferencePoint.CENTER) {
                         this.referenceY = 50;
                         this.style.top = -~~(this._height / 2) + "px";
-                    } else if ((point & REFERENCE_POINT.BOTTOM) == REFERENCE_POINT.BOTTOM) {
+                    } else if ((point & ReferencePoint.BOTTOM) == ReferencePoint.BOTTOM) {
                         this.referenceY = 100;
                         this.style.top = -this._height + "px";
                     } else {
@@ -548,7 +552,7 @@ var zz = new function() {
             this.children = new Array();
             this.nameMap = new Object();
         }
-        _DisplayObjectContainer.prototype = createClass(DisplayObject.prototype, {
+        _DisplayObjectContainer.prototype = createClass(DisplayObject, {
             /**
              * @param {DisplayObject} child
              */
@@ -745,15 +749,17 @@ var zz = new function() {
             }
             this.start();
         }
-        _Stage.prototype = createClass(DisplayObjectContainer.prototype, {
+        _Stage.prototype = createClass(DisplayObjectContainer, {
             start: function() {
                 if (!this.running) {
                     this.onEnterFrame();
                 }
             },
             pause: function() {
-                clearTimeout(this.handle);
-                this.handle = null;
+                if (this.handle) {
+                    clearTimeout(this.handle);
+                    this.handle = null;
+                }
             },
             running: {
                 get: function() {
@@ -762,6 +768,35 @@ var zz = new function() {
             },
             end: function() {
                 document.body.removeChild(this.element);
+            },
+            displayState: {
+                set: function(state) {
+                    var prefix = VENDER_PREFIX.toLowerCase();
+                    switch (state) {
+                    case StageDisplayState.FULL_SCREEN:
+                        if (typeof document[prefix + "CancelFullScreen"] != "undefined") {
+                            if (this.displayState != StageDisplayState.FULL_SCREEN) {
+                                if (this.element[prefix + "RequestFullScreen"]) {
+                                    this.element[prefix + "RequestFullScreen"]();
+                                }
+                            }
+                        }
+                        break;
+                    case StageDisplayState.NORMAL:
+                        if (document[prefix + "CancelFullScreen"]) {
+                            document[prefix + "CancelFullScreen"]();
+                        }
+                        break;
+                    }
+                },
+                get: function() {
+                    var prefix = VENDER_PREFIX.toLowerCase();
+                    if (prefix == "webkit" && document.webkitIsFullScreen ||
+                        document.fullScreen || document[prefix + "FullScreen"]) {
+                        return StageDisplayState.FULL_SCREEN;
+                    }
+                    return StageDisplayState.NORMAL;
+                }
             }
         });
         return _Stage;
@@ -818,7 +853,7 @@ var zz = new function() {
             this._canvasDirty = true;
         }
 
-        _Sprite.prototype = createClass(DisplayObjectContainer.prototype, {
+        _Sprite.prototype = createClass(DisplayObjectContainer, {
             width: {
                 get: function() {
                     var _super = Object.getOwnPropertyDescriptor(DisplayObject.prototype, "width");
@@ -1015,6 +1050,9 @@ var zz = new function() {
      * MovieClip
      */
     var MovieClip = new function() {
+        /**
+         * @constructor
+         */
         var _MovieClip = function(fileName, x, y) {
             Sprite.apply(this, arguments);
             this.currentFrame = 1;
@@ -1023,7 +1061,7 @@ var zz = new function() {
             this.currentLabel = "";
             this._mcDirty = true;
         }
-        _MovieClip.prototype = createClass(Sprite.prototype, {
+        _MovieClip.prototype = createClass(Sprite, {
             /**
              * @param {Object} data
              */
@@ -1156,7 +1194,7 @@ var zz = new function() {
             this.text = "";
             this.textColor = "#000000";
         }
-        _TextField.prototype = createClass(DisplayObject.prototype, {
+        _TextField.prototype = createClass(DisplayObject, {
             text: {
                 get: function() {
                     return this.element.innerHTML;
@@ -1227,6 +1265,8 @@ var zz = new function() {
             ENV: ENV,
             Event: Event,
             TouchEvent: TouchEvent,
+            ReferencePoint: ReferencePoint,
+            StageDisplayState: StageDisplayState,
             EventDispatcher: EventDispatcher,
             DisplayObject: DisplayObject,
             DisplayObjectContainer: DisplayObjectContainer,
@@ -1240,8 +1280,7 @@ var zz = new function() {
                 window[key] = this.registration[key];
             }
         },
-        DISPLAY: DISPLAY,
-        REFERENCE_POINT: DISPLAY,
+        DISPLAY: ReferencePoint,  // DISPLAY is deprecated.
         /**
          * preload image files.
          * @param {String[]} assets

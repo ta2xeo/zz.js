@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.1
+ * @version       0.0.2
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -28,7 +28,7 @@ zz.preload = new function() {
         var base = (function() {
             var base = new Stage("progress");
             base.style.position = "absolute";
-            base.referencePoint = zz.REFERENCE_POINT.CENTER;
+            base.referencePoint = zz.ReferencePoint.CENTER;
             base.x = window.innerWidth / 2;
             base.y = window.innerHeight / 2;
             base.width = 300;
