@@ -72,7 +72,7 @@ zz.preload = new function() {
             bar.render = function() {
                 bar.context.clearRect(0, 0, width, bar.height);
                 bar.context.fillRect(0, 0, progress, bar.height);
-            }
+            };
             return bar;
         }
 
@@ -85,8 +85,9 @@ zz.preload = new function() {
             progress += 10;
             if (progress >= limit) {
                 progress = limit;
-                if (percent == 100) {
-                    if (--wait == 0) {
+                if (percent === 100) {
+                    --wait;
+                    if (wait === 0) {
                         callback();
                         base.removeChild(bar);
                         base.end();
@@ -101,5 +102,5 @@ zz.preload = new function() {
             throw new Error('assets must be array.');
         }
         progressBar(assets, callback, options);
-    }
-}
+    };
+};

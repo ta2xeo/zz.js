@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.6
+ * @version       0.0.7
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -18,56 +18,6 @@ var zz = new function() {
     var ENV = (function() {
         var ua = navigator.userAgent;
 
-        function aboutWebkit() {
-            var match = null, os = null, model = null, version = null;
-            if (match = ua.match(/Mozilla\/5.0 \((iPhone|iPad|iPod); .*CPU .*OS ([0-9]_[0-9])/)) {
-                os = "iOS";
-                model = match[1];
-                version = parseFloat(match[2].replace("_", "."));
-            } else if (match = ua.match(/Mozilla\/5.0 \(Linux; U; Android (\d+\.\d+)\.\d+; [a-z]{2}-[a-z]{2}; (\S+) /)) {
-                os = "Android";
-                model = match[2];
-                version = parseFloat(match[1]);
-            } else if (match = ua.match(/Mozilla\/5.0 \((Windows NT) (\d+\.\d+); .*\)/)) {
-                os = "Windows";
-                model = match[1];
-                version = parseFloat(match[2]);
-            } else if (match = ua.match(/Mozilla\/5.0 \((Macintosh); Intel Mac OS X (\d+_\d+)_\d\)/)) {
-                os = "Mac OS X";
-                model = match[1];
-                version = parseFloat(match[2].replace("_", "."));
-            } else {
-                throw new Error("No support browser");
-            }
-            return {
-                os: os,
-                prefix: "webkit",
-                model: model,
-                version: version
-            };
-        }
-
-        function aboutMozilla() {
-            var match = null, os = null, model = null, version = null;
-            if (match = ua.match(/Mozilla\/5.0 \((Windows NT) (\d+\.\d+); .*\)/)) {
-                os = "Windows";
-                model = match[1];
-                version = parseFloat(match[2]);
-            } else if (match = ua.match(/Mozilla\/5.0 \((Macintosh); Intel Mac OS X (\d+\.\d+);/)) {
-                os = "Mac OS X";
-                model = match[1];
-                version = parseFloat(match[2].replace("_", "."));
-            } else {
-                throw new Error("No support browser");
-            }
-            return {
-                os: os,
-                prefix: "Moz",
-                model: model,
-                version: version
-            };
-        }
-
         var engine = (function() {
             if (ua.indexOf("WebKit") != -1) {
                 return "Webkit";
@@ -78,31 +28,77 @@ var zz = new function() {
             }
         })();
 
-        var about = {
-            Webkit: aboutWebkit,
-            Mozilla: aboutMozilla,
-            NoSupport: function() {
-                return {
-                    os: "Unknown",
-                    prefix: "",
-                    model: "Unknown",
-                    version: 0,
+        var devices = [
+            {
+                pattern: /\((iPhone|iPad|iPod); .*CPU .*OS ([0-9]_[0-9])/,
+                os: "iOS",
+                model: function(match) {
+                    return match[1];
+                },
+                version: function(match) {
+                    return parseFloat(match[2].replace("_", "."));
                 }
             },
-        }[engine]();
-
+            {
+                pattern: /Mozilla\/5.0 \(Linux; U; Android (\d+\.\d+)\.\d+; [a-z]{2}-[a-z]{2}; (\S+) /,
+                os: "Android",
+                model: function(match) {
+                    return match[2];
+                },
+                version: function(match) {
+                    return parseFloat(match[1]);
+                }
+            },
+            {
+                pattern: /Mozilla\/5.0 \((Windows NT) (\d+\.\d+); .*\)/,
+                os: "Windows",
+                model: function(match) {
+                    return match[1];
+                },
+                version: function(match) {
+                    return parseFloat(match[2]);
+                }
+            },
+            {
+                pattern: /Mozilla\/5.0 \((Macintosh); Intel Mac OS X (\d+[_.]\d+)/,
+                os: "Mac OS X",
+                model: function(match) {
+                    return match[1];
+                },
+                version: function(match) {
+                    return parseFloat(match[2].replace("_", "."));
+                }
+            }
+        ];
         var div = document.createElement("div");
         div.setAttribute("ontouchstart", "return");
 
-        return {
+        var env = {
             USER_AGENT: ua,
             RENDERING_ENGINE: engine,
-            VENDER_PREFIX: about.prefix,
-            MODEL: about.model,
-            VERSION: about.version,
+            VENDER_PREFIX: {
+                Webkit: "webkit",
+                Mozilla: "Moz",
+                NoSupport: ""
+            }[engine],
+            OS: "Unknown",
+            MODEL: "Unknown",
+            VERSION: 0,
             TOUCH_ENABLED: typeof div.ontouchstart === "function"
-        }
+        };
 
+        for (var i = 0, len = devices.length; i < len; i++) {
+            var device = devices[i];
+            var match = ua.match(device.pattern);
+            if (match) {
+                env.OS = device.os;
+                env.MODEL = device.model(match);
+                env.VERSION = device.version(match);
+                return env;
+            }
+        }
+        alert("Browser not supported.");
+        return env;
     })();
 
     var ANDROID = ENV.OS == "Android";
@@ -121,17 +117,19 @@ var zz = new function() {
      * @param {Object} properties
      */
     var createClass = function(superClass, properties) {
-        for (var property in properties) if (properties.hasOwnProperty(property)) {
-            if (typeof properties[property] == "function") {
-                properties[property] = {
-                    writable: true,
-                    enumerable: true,
-                    value: properties[property],
-                };
+        for (var property in properties) {
+            if (properties.hasOwnProperty(property)) {
+                if (typeof properties[property] == "function") {
+                    properties[property] = {
+                        writable: true,
+                        enumerable: true,
+                        value: properties[property]
+                    };
+                }
             }
         }
         return Object.create(superClass.prototype, properties);
-    }
+    };
 
     /**
      * Event
@@ -142,7 +140,7 @@ var zz = new function() {
          */
         var define = {
             ENTER_FRAME: "__enter_frame__",
-            COMPLETE: "__complete__",
+            COMPLETE: "__complete__"
         };
 
         /**
@@ -152,14 +150,14 @@ var zz = new function() {
             this.name = eventName;
             this.x = 0;
             this.y = 0;
-        }
+        };
 
         for (var key in define) {
             _Event[key] = define[key];
         }
 
         return _Event;
-    }
+    };
 
     /**
      * TouchEvent
@@ -170,17 +168,17 @@ var zz = new function() {
                 TOUCH_DOWN: "touchstart",
                 TOUCH_MOVE: "touchmove",
                 TOUCH_UP: "touchend",
-                TOUCH_OUT: "touchcancel",
-            }
+                TOUCH_OUT: "touchcancel"
+            };
         } else {
             return {
                 TOUCH_DOWN: "mousedown",
                 TOUCH_MOVE: "mousemove",
                 TOUCH_UP: "mouseup",
-                TOUCH_OUT: "mouseout",
-            }
+                TOUCH_OUT: "mouseout"
+            };
         }
-    }
+    };
 
     /**
      * FullScreen Mode
@@ -200,7 +198,7 @@ var zz = new function() {
          */
         var _EventDispatcher = function() {
             this.eventContainer = new Object();
-        }
+        };
         _EventDispatcher.prototype = {
             /**
              * @param {String} eventName
@@ -268,7 +266,7 @@ var zz = new function() {
             }
         };
         return _EventDispatcher;
-    }
+    };
 
     /**
      * DisplayObject
@@ -312,9 +310,9 @@ var zz = new function() {
                     if (self.enabled) {
                         dispatch(event, self);
                     }
-                }
+                };
             }
-        }
+        };
 
         function dispatch(event, self) {
             var rect = self.element.getBoundingClientRect();
@@ -490,11 +488,17 @@ var zz = new function() {
                     return this._visible;
                 },
                 set: function(visible) {
-                    if (this._visible = visible) {
-                        this.style.display = "block";
-                    } else {
-                        this.style.display = "none";
+                    this._visible = visible;
+                    var self = this;
+                    function display() {
+                        if (self._visible) {
+                            self.style.display = "block";
+                        } else {
+                            self.style.display = "none";
+                        }
+                        self.removeEventListener(Event.ENTER_FRAME, display);
                     }
+                    this.addEventListener(Event.ENTER_FRAME, display);
                 }
             },
             backgroundColor: {
@@ -537,7 +541,7 @@ var zz = new function() {
             }
         });
         return _DisplayObject;
-    }
+    };
 
     /**
      * DisplayObjectContainer
@@ -551,7 +555,7 @@ var zz = new function() {
             DisplayObject.apply(this);
             this.children = new Array();
             this.nameMap = new Object();
-        }
+        };
         _DisplayObjectContainer.prototype = createClass(DisplayObject, {
             /**
              * @param {DisplayObject} child
@@ -594,7 +598,7 @@ var zz = new function() {
                         break;
                     }
                 }
-                if (this.children.length == 0) {
+                if (this.children.length === 0) {
                     this.children = [];
                 }
             },
@@ -662,7 +666,7 @@ var zz = new function() {
                     // swap element
                     var child1_next = child1.element.nextSibling;
                     var child2_next = child2.element.nextSibling;
-                    if (child1_next == null) {
+                    if (child1_next === null) {
                         this.element.insertBefore(child1.element, child2_next);
                         this.element.insertBefore(child2.element, child1_next);
                     } else {
@@ -692,7 +696,8 @@ var zz = new function() {
                         if (!children[index]) {
                             children.splice(index, 1);
                         }
-                        packChildren(++index);
+                        ++index;
+                        packChildren(index);
                     }
                 }
                 packChildren(0);
@@ -704,7 +709,7 @@ var zz = new function() {
             }
         });
         return _DisplayObjectContainer;
-    }
+    };
 
     /**
      * Stage
@@ -732,8 +737,8 @@ var zz = new function() {
             this.style = root.style;
             this.style.position = "relative";
             this.style.overflow = "hidden";
-            this._width = parseInt(this.style.width);
-            this._height = parseInt(this.style.height);
+            this._width = parseInt(this.style.width, 10);
+            this._height = parseInt(this.style.height, 10);
             this.handle = null;
             var self = this;
             this.onEnterFrame = function() {
@@ -746,9 +751,9 @@ var zz = new function() {
                     wait = 1;
                 }
                 self.handle = setTimeout(self.onEnterFrame, wait);
-            }
+            };
             this.start();
-        }
+        };
         _Stage.prototype = createClass(DisplayObjectContainer, {
             start: function() {
                 if (!this.running) {
@@ -763,7 +768,7 @@ var zz = new function() {
             },
             running: {
                 get: function() {
-                    return this.handle != null;
+                    return this.handle !== null;
                 }
             },
             end: function() {
@@ -787,6 +792,8 @@ var zz = new function() {
                             document[prefix + "CancelFullScreen"]();
                         }
                         break;
+                    default:
+                        break;
                     }
                 },
                 get: function() {
@@ -800,7 +807,7 @@ var zz = new function() {
             }
         });
         return _Stage;
-    }
+    };
 
     /**
      * Sprite
@@ -851,7 +858,7 @@ var zz = new function() {
             this._green = 100;
             this._blue = 100;
             this._canvasDirty = true;
-        }
+        };
 
         _Sprite.prototype = createClass(DisplayObjectContainer, {
             width: {
@@ -922,7 +929,7 @@ var zz = new function() {
                     var setImage = function() {
                         self.getImageData();
                         self.removeEventListener(Event.COMPLETE, setImage);
-                    }
+                    };
                     this.addEventListener(Event.COMPLETE, setImage);
                 }
             },
@@ -1018,7 +1025,7 @@ var zz = new function() {
                 }
             },
             getImageData: function() {
-                if (this._originalImageData == null) {
+                if (this._originalImageData === null) {
                     this.context.clearRect(0, 0, this._width, this._height);
                     this.context.drawImage(this.img, this.tx, this.ty, this.tw, this.th, 0, 0, this._width, this._height);
                     this._originalImageData = this.context.getImageData(0, 0, this._width, this._height);
@@ -1031,7 +1038,7 @@ var zz = new function() {
                 for (var y = 0; y < h; y++) {
                     for (var x = 0; x < w; x++) {
                         var ptr = (y * w + x) * 4;
-                        if (input[ptr + 3] == 0) {
+                        if (input[ptr + 3] === 0) {
                             continue;
                         }
                         output[ptr + 0] = input[ptr + 0] * this._red / 100 + this._brightness * 255 / 100;
@@ -1044,7 +1051,7 @@ var zz = new function() {
             }
         });
         return _Sprite;
-    }
+    };
 
     /**
      * MovieClip
@@ -1060,7 +1067,7 @@ var zz = new function() {
             this.playing = true;
             this.currentLabel = "";
             this._mcDirty = true;
-        }
+        };
         _MovieClip.prototype = createClass(Sprite, {
             /**
              * @param {Object} data
@@ -1085,7 +1092,7 @@ var zz = new function() {
                  * @param {Int} startIndex
                  */
                 function supplement(startIndex) {
-                    startIndex = parseInt(startIndex);
+                    startIndex = parseInt(startIndex, 10);
                     var start = this.frames[startIndex];
                     var endIndex = startIndex;
                     for (var i = startIndex + 1, len = this.frames.length; i < len; i++) {
@@ -1096,11 +1103,11 @@ var zz = new function() {
                     }
                     if (startIndex != endIndex) {
                         var end = this.frames[endIndex];
-                        var len = endIndex - startIndex;
+                        var size = endIndex - startIndex;
                         for (var key in end) {
                             if (start[key] != undefined && typeof(start[key]) == "number") {
-                                var val = (end[key] - start[key]) / len;
-                                for (var i = startIndex + 1; i < endIndex; i++) {
+                                var val = (end[key] - start[key]) / size;
+                                for (i = startIndex + 1; i < endIndex; i++) {
                                     if (!this.frames[i]) {
                                         this.frames[i] = new Object();
                                     }
@@ -1174,7 +1181,8 @@ var zz = new function() {
                 }
                 DisplayObjectContainer.prototype.onEnterFrame.call(this);
                 if (this.playing) {
-                    if (++this.currentFrame >= this.frames.length) {
+                    ++this.currentFrame;
+                    if (this.currentFrame >= this.frames.length) {
                         this.currentFrame = 1;
                     }
                     this._mcDirty = true;
@@ -1182,7 +1190,7 @@ var zz = new function() {
             }
         });
         return _MovieClip;
-    }
+    };
 
     /**
      * TextField
@@ -1193,7 +1201,7 @@ var zz = new function() {
             DisplayObject.apply(this);
             this.text = "";
             this.textColor = "#000000";
-        }
+        };
         _TextField.prototype = createClass(DisplayObject, {
             text: {
                 get: function() {
@@ -1210,10 +1218,10 @@ var zz = new function() {
                 set: function(color) {
                     this.style.color = color;
                 }
-            },
+            }
         });
         return _TextField;
-    }
+    };
 
     function loadImage(src, callback) {
         var img = new Image();
@@ -1226,13 +1234,13 @@ var zz = new function() {
             } else {
                 throw new Error('Cannot load image files: ' + src);
             }
-        }
+        };
 
         img.onload = function() {
             if (typeof callback == "function") {
                 callback();
             }
-        }
+        };
         return img;
     }
 
@@ -1250,12 +1258,12 @@ var zz = new function() {
                 } else {
                     throw new Error('Cannot load script files: ' + src);
                 }
-            }
+            };
             script.onload = function() {
                 if (typeof callback == "function") {
                     callback();
                 }
-            }
+            };
             head.appendChild(script);
         })();
     }
@@ -1273,7 +1281,7 @@ var zz = new function() {
             Stage: Stage,
             Sprite: Sprite,
             MovieClip: MovieClip,
-            TextField: TextField,
+            TextField: TextField
         },
         globalize: function _globalize() {
             for (var key in this.registration) {
@@ -1292,7 +1300,8 @@ var zz = new function() {
             }
             var assetsCount = assets.length;
             function checkLoad() {
-                if (--assetsCount == 0) {
+                --assetsCount;
+                if (assetsCount === 0) {
                     if (typeof callback == "function") {
                         callback();
                     }
@@ -1314,13 +1323,17 @@ var zz = new function() {
                 case "js":
                     loadJS(src, callback);
                     break;
+                default:
+                    break;
                 }
             }
         }
     };
 
-    for (var property in _zz.registration) if (!_zz.hasOwnProperty(property)) {
-        _zz[property] = _zz.registration[property];
+    for (var property in _zz.registration) {
+        if (!_zz.hasOwnProperty(property)) {
+            _zz[property] = _zz.registration[property];
+        }
     }
     return _zz;
 };

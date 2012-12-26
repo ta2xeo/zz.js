@@ -21,14 +21,14 @@ function SceneManager() {
     manager.changeScene = function(sceneName) {
         var scene = manager.getChildByName(sceneName);
         scene.visible = true;
-    }
+    };
     /**
      * @param {Scene} scene
      */
     manager.addScene = function(scene) {
         scene.visible = false;
         manager.addChild(scene);
-    }
+    };
     return manager;
 }
 
@@ -54,10 +54,10 @@ function Number(image, offset) {
                     }
                 }
             }
-        }
+        };
         n.getNum = function() {
             return n._num;
-        }
+        };
         n.setNum(0);
         return n;
     }
@@ -67,20 +67,22 @@ function Number(image, offset) {
     nums.setNumber = function(num) {
         var strNum = num + "";
         var strLen = strNum.length;
+        var i;
         if (strLen > maxLen) {
-            for (var i = 0; i < strLen - maxLen; i++) {
+            for (i = 0; i < strLen - maxLen; i++) {
                 var n = number();
-                n.x = offset * figure--;
+                n.x = offset * figure;
+                --figure;
                 nums.addChild(n);
             }
             maxLen = strLen;
         }
         var zero = true;
-        for (var i = 0, len = nums.numChildren; i < len; i++) {
-            var n = parseInt(strNum.charAt(i));
+        for (i = 0, len = nums.numChildren; i < len; i++) {
+            n = parseInt(strNum.charAt(i), 10);
             var idx = len - i - 1;
             var child = nums.getChildAt(idx);
-            if (zero && n == 0 && maxLen != 1) {
+            if (zero && n === 0 && maxLen !== 1) {
                 if (child.visible) {
                     child.visible = false;
                 }
@@ -92,7 +94,7 @@ function Number(image, offset) {
                 zero = false;
             }
         }
-    }
+    };
     return nums;
 }
 
@@ -124,21 +126,21 @@ function Button(stateImages) {
     if (len != 1) {
         button.enable = function() {
             button.setChildIndex(enabled, 1);
-        }
+        };
         button.disable = function() {
             button.setChildIndex(enabled, 0);
-        }
+        };
     } else {
         button.enable = function() {
             // security error
             //enabled.brightness = 0;
             enabled.alpha = 1;
-        }
+        };
         button.disable = function() {
             // security error
             //enabled.brightness = -50;
             enabled.alpha = 0.9;
-        }
+        };
     }
     button.enable();
     return button;
@@ -170,11 +172,11 @@ function FPS() {
  * The data object converts to get parameters.
  */
 function joinQuery(url, data) {
-    var params = new Array()
+    var params = new Array();
     for (var key in data) {
         params.push(key + "=" + encodeURIComponent(data[key]));
     }
-    if (params.length == 0) {
+    if (params.length === 0) {
         return url;
     }
     var query = params.join("&");

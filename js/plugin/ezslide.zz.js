@@ -155,6 +155,7 @@ var ezslide = new function() {
                 container.x = 0;
             }
             startTransition();
+            return false;
         }
         root.addEventListener(zz.TouchEvent.TOUCH_UP, touchRelease);
         root.addEventListener(zz.TouchEvent.TOUCH_OUT, touchRelease);
@@ -175,6 +176,6 @@ var ezslide = new function() {
     }
 
     return {
-        setSlideImages: setSlideImages,
-    }
-}
+        setSlideImages: setSlideImages
+    };
+};
