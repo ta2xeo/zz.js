@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.7
+ * @version       0.0.8
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -21,8 +21,8 @@ var zz = new function() {
         var engine = (function() {
             if (ua.indexOf("WebKit") != -1) {
                 return "Webkit";
-            } else if (ua.indexOf("Mozilla") != -1) {
-                return "Mozilla";
+            } else if (ua.indexOf("Gecko") != -1) {
+                return "Gecko";
             } else {
                 return "NoSupport";
             }
@@ -78,7 +78,7 @@ var zz = new function() {
             RENDERING_ENGINE: engine,
             VENDER_PREFIX: {
                 Webkit: "webkit",
-                Mozilla: "Moz",
+                Gecko: "Moz",
                 NoSupport: ""
             }[engine],
             OS: "Unknown",
@@ -346,8 +346,8 @@ var zz = new function() {
                 this.y = y;
             },
             setSize: function(width, height) {
-                this._width = width;
-                this._height = height;
+                this.width = width;
+                this.height = height;
             },
             setRect: function(x, y, width, height) {
                 this.setPosition(x, y);
@@ -498,7 +498,11 @@ var zz = new function() {
                         }
                         self.removeEventListener(Event.ENTER_FRAME, display);
                     }
-                    this.addEventListener(Event.ENTER_FRAME, display);
+                    if (this._visible) {
+                        this.addEventListener(Event.ENTER_FRAME, display);
+                    } else {
+                        this.style.display = "none";
+                    }
                 }
             },
             backgroundColor: {
@@ -510,6 +514,9 @@ var zz = new function() {
                 }
             },
             referencePoint: {
+                get: function() {
+                    return this.style[VENDER_PREFIX + "TransformOrigin"];
+                },
                 set: function(point) {
                     this._reference = point;
                     if ((point & ReferencePoint.CENTER) == ReferencePoint.CENTER) {
@@ -1125,6 +1132,9 @@ var zz = new function() {
             },
             play: function() {
                 ++this.currentFrame;
+                if (this.currentFrame >= this.frames.length) {
+                    this.currentFrame = 1;
+                }
                 this.playing = true;
                 this._mcDirty = true;
             },
@@ -1209,6 +1219,7 @@ var zz = new function() {
                 },
                 set: function(text) {
                     this.element.innerHTML = text;
+                    this.setSize(this.width, this.height);
                 }
             },
             textColor: {
@@ -1217,6 +1228,46 @@ var zz = new function() {
                 },
                 set: function(color) {
                     this.style.color = color;
+                }
+            },
+            visible: {
+                get: function() {
+                    return this._visible;
+                },
+                set: function(visible) {
+                    this._visible = visible;
+                    var self = this;
+                    function display() {
+                        if (self._visible) {
+                            self.style.visibility = "visible";
+                        } else {
+                            self.style.visibility = "hidden";
+                        }
+                        self.removeEventListener(Event.ENTER_FRAME, display);
+                    }
+                    if (this._visible) {
+                        this.addEventListener(Event.ENTER_FRAME, display);
+                    } else {
+                        this.style.visibility = "hidden";
+                    }
+                }
+            },
+            width: {
+                get: function() {
+                    return this.element.clientWidth;
+                },
+                set: function(width) {
+                    this._width = width;
+                    this.referencePoint = this._reference;
+                }
+            },
+            height: {
+                get: function() {
+                    return this.element.clientHeight;
+                },
+                set: function(height) {
+                    this._height = height;
+                    this.referencePoint = this._reference;
                 }
             }
         });
@@ -1288,6 +1339,7 @@ var zz = new function() {
                 window[key] = this.registration[key];
             }
         },
+        createClass: createClass,
         DISPLAY: ReferencePoint,  // DISPLAY is deprecated.
         /**
          * preload image files.
@@ -1327,13 +1379,35 @@ var zz = new function() {
                     break;
                 }
             }
+        },
+        importModules: function(jsfiles, callback) {
+            var modules = new Array();
+            for (var i = 0, len = jsfiles.length; i < len; i++) {
+                var mod = jsfiles[i].split("/").pop().split(".")[1];
+                modules.push(mod);
+            }
+            _zz.preload(jsfiles, function() {
+                for (var i = 0, len = modules.length; i < len; i++) {
+                    var module = zz[modules[i]];
+                    for (var property in module) {
+                        _zz.registration[property] = module[property];
+                    }
+                }
+                setProperty();
+                if (callback) {
+                    callback();
+                }
+            });
         }
     };
 
-    for (var property in _zz.registration) {
-        if (!_zz.hasOwnProperty(property)) {
-            _zz[property] = _zz.registration[property];
+    function setProperty() {
+        for (var property in _zz.registration) {
+            if (!_zz.hasOwnProperty(property)) {
+                _zz[property] = _zz.registration[property];
+            }
         }
     }
+    setProperty();
     return _zz;
 };
