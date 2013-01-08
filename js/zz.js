@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.8
+ * @version       0.0.9
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -686,7 +686,9 @@ var zz = new function() {
                 if (this._visible) {
                     DisplayObject.prototype.render.call(this);
                     for (var i = 0, len = this.numChildren; i < len; i++) {
-                        this.children[i].render();
+                        if (this.children[i]) {
+                            this.children[i].render();
+                        }
                     }
                 }
             },
@@ -1170,9 +1172,9 @@ var zz = new function() {
                 if (this._mcDirty) {
                     if (frame != undefined) {
                         for (var key in frame) {
-                            if (key == "dispatch"){
+                            if (key == "dispatch") {  // dispatch is deprecated. Use event.
                                 this.dispatchEvent(frame["dispatch"]);
-                            } else if (key == "event"){
+                            } else if (key == "event") {
                                 this.dispatchEvent(frame["event"]);
                             } else if (key == "stop") {
                                 this.playing = false;
@@ -1203,6 +1205,20 @@ var zz = new function() {
     };
 
     /**
+     * TextFormat
+     */
+    var TextFormat = new function() {
+        var _TextFormat = function() {
+            this.font = "";
+            this.bold = false;
+            this.italic = false;
+            this.size = null;
+            this.color = "";
+        };
+        return _TextFormat;
+    };
+
+    /**
      * TextField
      * @extends DisplayObject
      */
@@ -1210,9 +1226,21 @@ var zz = new function() {
         var _TextField = function() {
             DisplayObject.apply(this);
             this.text = "";
-            this.textColor = "#000000";
         };
         _TextField.prototype = createClass(DisplayObject, {
+            defaultTextFormat: {
+                get: function() {
+                    return this._defaultTextFormat;
+                },
+                set: function(fmt) {
+                    this._defaultTextFormat = fmt;
+                    this.style.fontFamily = fmt.font;
+                    this.style.fontWeight = fmt.bold ? "bold" : "normal";
+                    this.style.fontStyle = fmt.italic ? "italic" : "normal";
+                    this.style.fontSize = fmt.size ? fmt.size + "px" : "";
+                    this.style.color = fmt.color;
+                }
+            },
             text: {
                 get: function() {
                     return this.element.innerHTML;
@@ -1334,7 +1362,7 @@ var zz = new function() {
             MovieClip: MovieClip,
             TextField: TextField
         },
-        globalize: function _globalize() {
+        globalize: function() {
             for (var key in this.registration) {
                 window[key] = this.registration[key];
             }

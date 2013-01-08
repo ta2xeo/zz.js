@@ -1,2 +1,3 @@
 syntax: regexp
-.orig$
+\.DS_Store$
+\.orig$
