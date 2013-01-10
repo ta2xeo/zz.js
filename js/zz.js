@@ -1359,6 +1359,7 @@ var zz = new function() {
         Stage: Stage,
         Sprite: Sprite,
         MovieClip: MovieClip,
+        TextFormat: TextFormat,
         TextField: TextField
     };
 
