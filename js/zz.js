@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.9
+ * @version       0.1.0
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -1347,24 +1347,25 @@ var zz = new function() {
         })();
     }
 
+    var registration = {
+        ENV: ENV,
+        Event: Event,
+        TouchEvent: TouchEvent,
+        ReferencePoint: ReferencePoint,
+        StageDisplayState: StageDisplayState,
+        EventDispatcher: EventDispatcher,
+        DisplayObject: DisplayObject,
+        DisplayObjectContainer: DisplayObjectContainer,
+        Stage: Stage,
+        Sprite: Sprite,
+        MovieClip: MovieClip,
+        TextField: TextField
+    };
+
     var _zz = {
-        registration: {
-            ENV: ENV,
-            Event: Event,
-            TouchEvent: TouchEvent,
-            ReferencePoint: ReferencePoint,
-            StageDisplayState: StageDisplayState,
-            EventDispatcher: EventDispatcher,
-            DisplayObject: DisplayObject,
-            DisplayObjectContainer: DisplayObjectContainer,
-            Stage: Stage,
-            Sprite: Sprite,
-            MovieClip: MovieClip,
-            TextField: TextField
-        },
         globalize: function() {
-            for (var key in this.registration) {
-                window[key] = this.registration[key];
+            for (var key in registration) {
+                window[key] = registration[key];
             }
         },
         createClass: createClass,
@@ -1418,7 +1419,7 @@ var zz = new function() {
                 for (var i = 0, len = modules.length; i < len; i++) {
                     var module = zz[modules[i]];
                     for (var property in module) {
-                        _zz.registration[property] = module[property];
+                        registration[property] = module[property];
                     }
                 }
                 setProperty();
@@ -1430,10 +1431,8 @@ var zz = new function() {
     };
 
     function setProperty() {
-        for (var property in _zz.registration) {
-            if (!_zz.hasOwnProperty(property)) {
-                _zz[property] = _zz.registration[property];
-            }
+        for (var property in registration) {
+            _zz[property] = registration[property];
         }
     }
     setProperty();
