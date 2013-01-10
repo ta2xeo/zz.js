@@ -409,7 +409,7 @@ zz.adv = new function() {
                     if (currentImage instanceof Array === false) {
                         currentImage = [currentImage];
                     }
-                    for (var i = 0, len = currentImage.length; i < len; i++) {
+                    for (i = 0, len = currentImage.length; i < len; i++) {
                         var image = currentImage[i];
                         this.imageContainer.addChild(new Image(image));
                     }

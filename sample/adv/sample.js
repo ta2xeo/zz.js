@@ -113,7 +113,7 @@ function main() {
 
 function start() {
     zz.importModules([
-        "/js/plugin/zz.adv.js"
+        "/js/module/zz.adv.js"
     ], main);
 }
 

@@ -9,10 +9,10 @@ SRC = "../js"
 DEST = "../js/min"
 TARGETS = [
     "zz.js",
-    "plugin/zz.adv.js",
-    "plugin/ezslide.zz.js",
-    "plugin/loadingBar.zz.js",
-    "plugin/util.zz.js",
+    "module/zz.adv.js",
+    "module/ezslide.zz.js",
+    "module/loadingBar.zz.js",
+    "module/util.zz.js",
     ]
 
 
