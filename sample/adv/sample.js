@@ -8,6 +8,8 @@
  */
 "use strict";
 
+var ROOT_PATH = "../../";
+
 function main() {
     zz.globalize();
 
@@ -35,7 +37,7 @@ function main() {
             name: "ツチヤ",
             text: 'これはサンプルのテキストです。<br />このテキストは<span style="color:#f00;">HTMLタグ</span>が使用できます。',
             image: {
-                path: "/img/hoge1.png",
+                path: ROOT_PATH + "img/hoge1.png",
                 x: -50,
                 y: 0,
                 active: true,
@@ -46,13 +48,13 @@ function main() {
             text: "nameColorsに指定されていない色はデフォルトの色になります。",
             image: [
                 {
-                    path: "/img/hoge1.png",
+                    path: ROOT_PATH + "img/hoge1.png",
                     x: -50,
                     y: 0,
                     active: false
                 },
                 {
-                    path: "/img/hoge2.png",
+                    path: ROOT_PATH + "img/hoge2.png",
                     x: 150,
                     y: 0,
                     active: true
@@ -113,7 +115,7 @@ function main() {
 
 function start() {
     zz.importModules([
-        "/js/module/zz.adv.js"
+        ROOT_PATH + "js/module/zz.adv.js"
     ], main);
 }
 
