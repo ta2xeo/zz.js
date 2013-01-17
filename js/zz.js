@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.1.1
+ * @version       0.1.2
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -1163,32 +1163,42 @@ var zz = new function() {
             },
             gotoAndPlay: function(frame) {
                 this.playing = true;
-                this.setFrame.call(this, frame);
+                this.setFrame(frame);
             },
             gotoAndStop: function(frame) {
                 this.playing = false;
-                this.setFrame.call(this, frame);
+                this.setFrame(frame);
             },
             onEnterFrame: function() {
                 var frame = this.frames[this.currentFrame];
                 if (this._mcDirty) {
                     if (frame != undefined) {
+                        var event = null;
                         for (var key in frame) {
-                            if (key == "dispatch") {  // dispatch is deprecated. Use event.
-                                this.dispatchEvent(frame["dispatch"]);
-                            } else if (key == "event") {
-                                this.dispatchEvent(frame["event"]);
-                            } else if (key == "stop") {
+                            switch (key) {
+                            case "stop":
                                 this.playing = false;
-                            } else if (key == "gotoAndPlay") {
-                                this.gotoAndPlay(frame["gotoAndPlay"]);
-                            } else if (key == "gotoAndStop") {
-                                this.gotoAndStop(frame["gotoAndStop"]);
-                            } else if (key == "label") {
-                                this.currentLabel = frame["label"];
-                            } else {
+                                break;
+                            case "gotoAndPlay":
+                                this.gotoAndPlay(frame[key]);
+                                break;
+                            case "gotoAndStop":
+                                this.gotoAndStop(frame[key]);
+                                break;
+                            case "label":
+                                this.currentLabel = frame[key];
+                                break;
+                            case "event":
+                            case "dispatch":  // dispatch is deprecated.
+                                event = frame[key];
+                                break;
+                            default:
                                 this[key] = frame[key];
+                                break;
                             }
+                        }
+                        if (event) {
+                            this.dispatchEvent(event);
                         }
                     }
                     this._mcDirty = false;
