@@ -10,6 +10,8 @@ DEST = "../js/min"
 TARGETS = [
     "zz.js",
     "module/zz.adv.js",
+    "module/zz.suspend.js",
+
     "module/ezslide.zz.js",
     "module/loadingBar.zz.js",
     "module/util.zz.js",

@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.1.0
+ * @version       0.1.1
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -749,21 +749,23 @@ var zz = new function() {
             this._width = parseInt(this.style.width, 10);
             this._height = parseInt(this.style.height, 10);
             this.handle = null;
-            var self = this;
-            this.onEnterFrame = function() {
-                var prev = +new Date();
-                DisplayObjectContainer.prototype.onEnterFrame.call(self);
-                self.render();
-                var passage = +new Date() - prev;
-                var wait = ~~(1000 / self.frameRate) - passage;
-                if (wait < 1) {
-                    wait = 1;
-                }
-                self.handle = setTimeout(self.onEnterFrame, wait);
-            };
             this.start();
         };
         _Stage.prototype = createClass(DisplayObjectContainer, {
+            onEnterFrame: function() {
+                var prev = +new Date();
+                DisplayObjectContainer.prototype.onEnterFrame.call(this);
+                this.render();
+                var passage = +new Date() - prev;
+                var wait = ~~(1000 / this.frameRate) - passage;
+                if (wait < 1) {
+                    wait = 1;
+                }
+                var self = this;
+                this.handle = setTimeout(function() {
+                    self.onEnterFrame();
+                }, wait);
+            },
             start: function() {
                 if (!this.running) {
                     this.onEnterFrame();

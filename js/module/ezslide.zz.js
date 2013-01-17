@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.2
+ * @version       0.0.3
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -38,6 +38,7 @@ var ezslide = new function() {
         var index = 0;
         var size = container.numChildren;
         var handle = null;
+        var enabledTouchRelease = false;
 
         function stopTransition() {
             container.style[zz.ENV.VENDER_PREFIX + "TransitionDuration"] = null;
@@ -87,6 +88,7 @@ var ezslide = new function() {
             if (handle === null) {
                 handle = setTimeout(slideShow, interval);
             }
+            enabledTouchRelease = false;
         }
         container.element.addEventListener(zz.ENV.VENDER_PREFIX + "TransitionEnd", setPosition);
 
@@ -145,6 +147,12 @@ var ezslide = new function() {
             }
             var threshold = 20;
             var flick = Math.abs(stackX[0] - container.x);
+
+            if (enabledTouchRelease) {
+                return true;
+            }
+            enabledTouchRelease = true;
+
             if (container.x > 0 && (flick > threshold || container.x > width / 2)) {
                 --index;
                 container.x = width;
