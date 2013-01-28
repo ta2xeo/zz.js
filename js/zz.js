@@ -10,6 +10,31 @@
 
 var zz = new function() {
 
+    if (!window.performance) {
+        window.performance = {};
+    }
+    performance.now =
+        performance.now ||
+        performance.mozNow ||
+        performance.webkitNow ||
+        performance.msNow ||
+        performance.oNow ||
+        function() {
+            return new Date().getTime();
+        };
+
+    window.requestAnimationFrame =
+        window.requestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        (function() {
+            var prev = performance.now();
+            return function(callback) {
+                return setTimeout(callback, Math.max(1, 1000 / this.frameRate - performance.now() - prev + 0.5) << 0);
+            }
+        }());
+
     /// default frame rate
     var DEFAULT_FRAMERATE = 30;
 
@@ -761,17 +786,14 @@ var zz = new function() {
             this._height = parseInt(this.style.height, 10);
             this.handle = null;
             this.start();
+            this.renderLoop();
         };
         _Stage.prototype = createClass(DisplayObjectContainer, {
             onEnterFrame: function() {
-                var prev = +new Date();
+                var prev = performance.now();
                 DisplayObjectContainer.prototype.onEnterFrame.call(this);
-                this.render();
-                var passage = +new Date() - prev;
-                var wait = ~~(1000 / this.frameRate) - passage;
-                if (wait < 1) {
-                    wait = 1;
-                }
+                var elapsed = performance.now() - prev;
+                var wait = Math.max(1, (1000 / this.frameRate - elapsed + 0.5) << 0);
                 var self = this;
                 if (!this._pause) {
                     this.handle = setTimeout(function() {
@@ -780,6 +802,13 @@ var zz = new function() {
                 } else {
                     this.handle = null;
                 }
+            },
+            renderLoop: function() {
+                var self = this;
+                self.render();
+                requestAnimationFrame(function() {
+                    self.renderLoop();
+                });
             },
             start: function() {
                 this._pause = false;
