@@ -364,7 +364,18 @@ var zz = new function() {
                 throw new Error("Not implemented error.");
             },
             localToGlobal: function(localX, localY) {
-                throw new Error("Not implemented error.");
+                var x = localX, y = localY;
+                if (!x) {
+                    x = this.x;
+                }
+                if (!y) {
+                    y = this.y;
+                }
+                console.log(x, y);
+                return {
+                    x: x,
+                    y: y
+                }
             },
             render: function() {
             },
@@ -762,16 +773,22 @@ var zz = new function() {
                     wait = 1;
                 }
                 var self = this;
-                this.handle = setTimeout(function() {
-                    self.onEnterFrame();
-                }, wait);
+                if (!this._pause) {
+                    this.handle = setTimeout(function() {
+                        self.onEnterFrame();
+                    }, wait);
+                } else {
+                    this.handle = null;
+                }
             },
             start: function() {
+                this._pause = false;
                 if (!this.running) {
                     this.onEnterFrame();
                 }
             },
             pause: function() {
+                this._pause = true;
                 if (this.handle) {
                     clearTimeout(this.handle);
                     this.handle = null;
