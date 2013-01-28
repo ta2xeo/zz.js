@@ -63,6 +63,11 @@ function main() {
         }
         if (ball.y + ball.height > 480) {
             // out of stage
+            isMove = false;
+            isTouch = false;
+            message.visible = true;
+            ball.x = bar.x + bar.width / 2;
+            ball.y = bar.y - bar.height;
         }
     }
     root.addEventListener(Event.ENTER_FRAME, wallHitCheck);
@@ -90,7 +95,6 @@ function main() {
             4: {label: "lv4", backgroundColor: colors[3], stop: true},
             5: {label: "delete", visible: false, stop: true, event: "destroy"},
         });
-        box.gotoAndStop("lv4");
         box.hitCheck = function() {
             if ((ball.x + ball.width > box.x) &&
                 (ball.x < box.x + box.width) &&
