@@ -15,7 +15,6 @@ function main() {
     zz.globalize();
 
     var root = new Stage("stage");
-    root.frameRate = 60;
 
     var touchSpace = new DisplayObject();
     touchSpace.backgroundColor = "#999999";

@@ -31,7 +31,8 @@ var zz = new function() {
         (function() {
             var prev = performance.now();
             return function(callback) {
-                return setTimeout(callback, Math.max(1, 1000 / this.frameRate - performance.now() - prev + 0.5) << 0);
+                var elapsed = performance.now() - prev;
+                return setTimeout(callback, Math.max(1, 1000 / this.frameRate - elapsed << 0));
             }
         }());
 
@@ -65,10 +66,10 @@ var zz = new function() {
                 }
             },
             {
-                pattern: /Mozilla\/5.0 \(Linux; U; Android (\d+\.\d+)\.\d+; [a-z]{2}-[a-z]{2}; (\S+) /,
+                pattern: /Android (\d+\.\d+)\.\d+; ?([a-z]{2}-[a-z]{2}|);? ?(\S+) /,
                 os: "Android",
                 model: function(match) {
-                    return match[2];
+                    return match[3];
                 },
                 version: function(match) {
                     return parseFloat(match[1]);
@@ -101,7 +102,7 @@ var zz = new function() {
         var env = {
             USER_AGENT: ua,
             RENDERING_ENGINE: engine,
-            VENDER_PREFIX: {
+            VENDOR_PREFIX: {
                 Webkit: "webkit",
                 Gecko: "Moz",
                 NoSupport: ""
@@ -127,7 +128,7 @@ var zz = new function() {
     })();
 
     var ANDROID = ENV.OS == "Android";
-    var VENDER_PREFIX = ENV.VENDER_PREFIX;
+    var PREFIX = ENV.VENDOR_PREFIX;
     var ReferencePoint = {
         TOP: 1,
         BOTTOM: 2,
@@ -308,25 +309,22 @@ var zz = new function() {
             }
             this.style = this.element.style;
             this.style.position = "absolute";
-            this.style[VENDER_PREFIX + "TapHighlightColor"] = "rgba(0,0,0,0)";
-            this.style[VENDER_PREFIX + "TouchCallout"] = "none";
-            this.style[VENDER_PREFIX + "UserSelect"] = "none";
+            this.style[PREFIX + "TapHighlightColor"] = "rgba(0,0,0,0)";
+            this.style[PREFIX + "TouchCallout"] = "none";
+            this.style[PREFIX + "UserSelect"] = "none";
             this._name = "";
             this.parent = null;
-            this._x = 0;
-            this._y = 0;
+            this.x = 0;
+            this.y = 0;
             this._width = 0;
             this._height = 0;
-            this._scaleX = 1;
-            this._scaleY = 1;
-            this._rotation = 0;
-            this._alpha = 1;
-            this._visible = true;
-            this._dirty = false;
-            this.referenceX = 0;  // percentage
-            this.referenceY = 0;  // percentage
-            this._reference = null;
+            this.scaleX = 1;
+            this.scaleY = 1;
+            this.rotation = 0;
+            this.alpha = 1;
+            this.visible = true;
             this.referencePoint = ReferencePoint.LEFT | ReferencePoint.TOP;
+            this._dirty = false;
             this.enabled = true;
             var self = this;
 
@@ -344,12 +342,12 @@ var zz = new function() {
             var e = new Event(event.type);
             if (ENV.TOUCH_ENABLED) {
                 if (event.touches.length) {
-                    e.x = ~~(event.touches[0].clientX - rect.left);
-                    e.y = ~~(event.touches[0].clientY - rect.top);
+                    e.x = event.touches[0].clientX - rect.left << 0;
+                    e.y = event.touches[0].clientY - rect.top << 0;
                 }
             } else {
-                e.x = ~~(event.clientX - rect.left);
-                e.y = ~~(event.clientY - rect.top);
+                e.x = event.clientX - rect.left << 0;
+                e.y = event.clientY - rect.top << 0;
             }
             var stop = self.dispatchEvent(e);
             if (stop) {
@@ -360,7 +358,7 @@ var zz = new function() {
 
         _DisplayObject.prototype = createClass(EventDispatcher, {
             transform: function() {
-                this.style[VENDER_PREFIX + "Transform"] = [
+                this.style[PREFIX + "Transform"] = [
                     "translate(" + this._x + "px," + this._y + "px)",
                     "rotate(" + this.rotation + "deg)",
                     "scale(" + this.scaleX + "," + this.scaleY + ")"
@@ -551,13 +549,13 @@ var zz = new function() {
             },
             referencePoint: {
                 get: function() {
-                    return this.style[VENDER_PREFIX + "TransformOrigin"];
+                    return this.style[PREFIX + "TransformOrigin"];
                 },
                 set: function(point) {
                     this._reference = point;
                     if ((point & ReferencePoint.CENTER) == ReferencePoint.CENTER) {
                         this.referenceX = 50;
-                        this.style.left = -~~(this._width / 2) + "px";
+                        this.style.left = -(this._width / 2 << 0) + "px";
                     } else if ((point & ReferencePoint.RIGHT) == ReferencePoint.RIGHT) {
                         this.referenceX = 100;
                         this.style.left = -this._width + "px";
@@ -567,7 +565,7 @@ var zz = new function() {
                     }
                     if ((point & ReferencePoint.MIDDLE) == ReferencePoint.MIDDLE || point == ReferencePoint.CENTER) {
                         this.referenceY = 50;
-                        this.style.top = -~~(this._height / 2) + "px";
+                        this.style.top = -(this._height / 2 << 0) + "px";
                     } else if ((point & ReferencePoint.BOTTOM) == ReferencePoint.BOTTOM) {
                         this.referenceY = 100;
                         this.style.top = -this._height + "px";
@@ -575,7 +573,7 @@ var zz = new function() {
                         this.referenceY = 0;
                         this.style.top = "0px";
                     }
-                    this.style[VENDER_PREFIX + "TransformOrigin"] = this.referenceX + "% " + this.referenceY + "%";
+                    this.style[PREFIX + "TransformOrigin"] = this.referenceX + "% " + this.referenceY + "%";
                     this._dirty = true;
                 }
             },
@@ -793,7 +791,7 @@ var zz = new function() {
                 var prev = performance.now();
                 DisplayObjectContainer.prototype.onEnterFrame.call(this);
                 var elapsed = performance.now() - prev;
-                var wait = Math.max(1, (1000 / this.frameRate - elapsed + 0.5) << 0);
+                var wait = Math.max(1, 1000 / this.frameRate - elapsed << 0);
                 var self = this;
                 if (!this._pause) {
                     this.handle = setTimeout(function() {
@@ -833,7 +831,7 @@ var zz = new function() {
             },
             displayState: {
                 set: function(state) {
-                    var prefix = VENDER_PREFIX.toLowerCase();
+                    var prefix = PREFIX.toLowerCase();
                     switch (state) {
                     case StageDisplayState.FULL_SCREEN:
                         if (typeof document[prefix + "CancelFullScreen"] != "undefined") {
@@ -854,7 +852,7 @@ var zz = new function() {
                     }
                 },
                 get: function() {
-                    var prefix = VENDER_PREFIX.toLowerCase();
+                    var prefix = PREFIX.toLowerCase();
                     if (prefix == "webkit" && document.webkitIsFullScreen ||
                         document.fullScreen || document[prefix + "FullScreen"]) {
                         return StageDisplayState.FULL_SCREEN;
@@ -1007,7 +1005,7 @@ var zz = new function() {
                     } else {
                         this.setImageData();
                         // not implemented
-                        //this.style[VENDER_PREFIX + "Filter"] = "brightness(" + brightness + "%)";
+                        //this.style[PREFIX + "Filter"] = "brightness(" + brightness + "%)";
                     }
                 }
             },
@@ -1235,7 +1233,6 @@ var zz = new function() {
                                 this.currentLabel = frame[key];
                                 break;
                             case "event":
-                            case "dispatch":  // dispatch is deprecated.
                                 event = frame[key];
                                 break;
                             default:
@@ -1428,7 +1425,6 @@ var zz = new function() {
             }
         },
         createClass: createClass,
-        DISPLAY: ReferencePoint,  // DISPLAY is deprecated.
         /**
          * preload image files.
          * @param {String[]} assets
