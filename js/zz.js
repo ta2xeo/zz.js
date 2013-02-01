@@ -33,7 +33,7 @@ var zz = new function() {
             return function(callback) {
                 var elapsed = performance.now() - prev;
                 return setTimeout(callback, Math.max(1, 1000 / this.frameRate - elapsed << 0));
-            }
+            };
         }());
 
     /// default frame rate
@@ -398,7 +398,7 @@ var zz = new function() {
                 return {
                     x: x,
                     y: y
-                }
+                };
             },
             render: function() {
             },

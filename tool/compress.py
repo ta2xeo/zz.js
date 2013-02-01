@@ -1,59 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import urllib
 import os
-from HTMLParser import HTMLParser
+from slimit import minify
+import re
+import shutil
 
-URL = "http://jscompress.com/"
-SRC = "../js"
-DEST = "../js/min"
-TARGETS = [
-    "zz.js",
-    "module/zz.adv.js",
-    "module/zz.suspend.js",
 
-    "module/ezslide.zz.js",
-    "module/loadingBar.zz.js",
-    "module/util.zz.js",
+TARGET = "../js"
+DEST = os.path.join(TARGET, "min")
+PATTERN = re.compile(os.path.join(TARGET, "(.*)".format(TARGET)))
+
+EXCLUDES = [
+    "htmlparser.js",
     ]
-
-
-def request(jsfile):
-    params = {
-        "js_in": open(os.path.join(SRC, jsfile)).read()
-        }
-    response = urllib.urlopen(URL, urllib.urlencode(params))
-    return response.read()
-
-
-class CompressionParser(HTMLParser):
-    def __init__(self):
-        HTMLParser.__init__(self)
-        self.script = []
-        self.inner = False
-
-    def handle_starttag(self, tag, attrs):
-        if tag == "textarea":
-            attr = dict(attrs)
-            if attr["name"] == "js_out":
-                self.inner = True
-
-    def handle_endtag(self, tag):
-        if tag == "textarea":
-            self.inner = False
-
-    def handle_data(self, data):
-        if self.inner is True:
-            self.script.append(data)
-
-    def handle_entityref(self, name):
-        if self.inner is True:
-            self.script.append({
-                "quot": '"',
-                "lt": "<",
-                "amp": "&",
-                "gt": ">",
-                }[name])
 
 
 def check_dir(dir):
@@ -65,16 +24,25 @@ def check_dir(dir):
 
 
 if __name__ == "__main__":
-    for jsfile in TARGETS:
-        minjs = jsfile[:-3] + ".min.js"
-        check_dir(os.path.dirname(os.path.join(DEST, minjs)))
-        html = request(jsfile)
-        parser = CompressionParser()
-        parser.feed(html)
-        parser.close()
+    shutil.rmtree(DEST, ignore_errors=True)
 
-        minjs = jsfile[:-3] + ".min.js"
-        f = open(os.path.join(DEST, minjs), "w")
-        f.write("".join(parser.script))
-        f.close()
-        print('"{filename}" is generated.'.format(filename=minjs))
+    for path, dir, file_list in os.walk(TARGET):
+        if "min" in path:
+            continue
+
+        for filename in file_list:
+            if filename in EXCLUDES or not filename.endswith(".js"):
+                continue
+
+            r = PATTERN.match(path)
+            if r:
+                dest = os.path.join(DEST, r.groups()[0])
+            else:
+                dest = DEST
+            check_dir(dest)
+            src = os.path.join(path, filename)
+            minjs = os.path.join(dest, filename[:-3] + ".min.js")
+            f = open(minjs, "w")
+            f.write(minify(open(src).read(), mangle=True))
+            f.close()
+            print('"{filename}" is generated.'.format(filename=minjs))

@@ -1,3 +1,4 @@
 syntax: regexp
+^tool\/jsl$
 \.DS_Store$
 \.orig$

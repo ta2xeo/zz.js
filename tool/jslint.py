@@ -1,75 +1,41 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import urllib
+"""
+http://www.javascriptlint.com/
+
+jslを使用して構文チェックを行います。
+"""
 import sys
 import os
-from HTMLParser import HTMLParser
+from commands import getoutput
 
-URL = "http://www.javascriptlint.com/online_lint.php"
-DIR = "../js"
-TARGETS = [
-    "zz.js",
-    "module/zz.adv.js",
-    "module/ezslide.zz.js",
-    "module/loadingBar.zz.js",
-    "module/util.zz.js",
+
+JSL_PATH = "./jsl"
+TARGET = "../js"
+EXCLUDES = [
+    "htmlparser.js",
     ]
 
-
-def request(jsfile):
-    params = {
-        "script": open(os.path.join(DIR, jsfile)).read(),
-        }
-    response = urllib.urlopen(URL, urllib.urlencode(params))
-    return response.read()
-
-
-class JSLintParser(HTMLParser):
-    def __init__(self):
-        HTMLParser.__init__(self)
-        self.script = []
-        self.inner = False
-        self.nest = 0
-        self.count = 0
-
-    def handle_starttag(self, tag, attribute):
-        attr = dict(attribute)
-        size = self.nest
-        funcs = [
-            lambda tag, attr: tag == "div" and "id" in attr and attr["id"] == "code",
-            lambda tag, attr: tag == "div",
-            lambda tag, attr: tag == "span",
-            ]
-        try:
-            if funcs[size](tag, attr):
-                self.nest += 1
-            if self.nest == 3:
-                self.count += 1
-        except IndexError:
-            pass
-
-    def handle_endtag(self, tag):
-        key = [
-            None,
-            "div",
-            "div",
-            "span"
-            ]
-        if self.nest:
-            if tag == key[self.nest]:
-                self.nest -= 1
-                if self.nest < 0:
-                    raise RuntimeError
-
-
 if __name__ == "__main__":
-    for jsfile in TARGETS:
-        html = request(jsfile)
-        parser = JSLintParser()
-        parser.feed(html)
-        parser.close()
+    error = False
+    for path, dir, file_list in os.walk(TARGET):
+        if "min" in path:
+            continue
 
-        print("[{filename}] erros: {count}".format(filename=jsfile, count=parser.count))
+        for filename in file_list:
+            if filename.endswith(".js") and filename not in EXCLUDES:
+                cmd = "{} -process {} -nologo".format(JSL_PATH, os.path.join(path, filename))
+                r = getoutput(cmd)
+                line = r.split("\n")[-1]
+                result = line.split(" ")
+                if result[0] != "0" or result[2] != "0":
+                    print("[{}] {}".format(filename, r))
+                    error = True
+                else:
+                    print("[{}] {}".format(filename, line))
 
-        if parser.count:
-            sys.exit(1)
+    if error:
+        print("JavaScript Lint NG")
+        sys.exit(1)
+    else:
+        print("JavaScript Lint OK")
