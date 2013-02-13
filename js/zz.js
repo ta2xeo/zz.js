@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.1.2
+ * @version       0.1.3
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -1464,32 +1464,20 @@ var zz = new function() {
                 }
             }
         },
-        importModules: function(jsfiles, callback) {
-            var modules = new Array();
-            for (var i = 0, len = jsfiles.length; i < len; i++) {
-                var mod = jsfiles[i].split("/").pop().split(".")[1];
-                modules.push(mod);
+        modularize: function(local, global) {
+            var merge = new Object();
+            for (var key in local) {
+                merge[key] = local[key];
             }
-            _zz.preload(jsfiles, function() {
-                for (var i = 0, len = modules.length; i < len; i++) {
-                    var module = zz[modules[i]];
-                    for (var property in module) {
-                        registration[property] = module[property];
-                    }
-                }
-                setProperty();
-                if (callback) {
-                    callback();
-                }
-            });
+            for (key in global) {
+                _zz[key] = registration[key] = merge[key] = global[key];
+            }
+            return merge;
         }
     };
 
-    function setProperty() {
-        for (var property in registration) {
-            _zz[property] = registration[property];
-        }
+    for (var property in registration) {
+        _zz[property] = registration[property];
     }
-    setProperty();
     return _zz;
 };

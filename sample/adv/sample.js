@@ -113,10 +113,4 @@ function main() {
     root.addChild(controller);
 }
 
-function start() {
-    zz.importModules([
-        ROOT_PATH + "js/module/zz.adv.js"
-    ], main);
-}
-
-window.addEventListener('load', start, false);
+window.addEventListener('load', main, false);

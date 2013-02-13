@@ -125,5 +125,5 @@ zz.suspend = new function() {
         };
     })();
 
-    return {};
+    return zz.modularize();
 };

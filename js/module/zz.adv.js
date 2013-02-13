@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.2
+ * @version       0.0.3
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  * 
  * htmlparser.jsが必要です。
@@ -427,9 +427,9 @@ zz.adv = new function() {
         }
     });
 
-    return {
+    return zz.modularize(null, {
         TextArea: TextArea,
         NamePlate: NamePlate,
         ADVController: ADVController
-    };
+    });
 };
