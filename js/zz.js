@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.1.3
+ * @version       0.1.4
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -36,7 +36,6 @@ var zz = new function() {
             };
         }());
 
-    /// default frame rate
     var DEFAULT_FRAMERATE = 30;
 
     var DEFAULT_RETRY_COUNT = 3;
@@ -309,6 +308,7 @@ var zz = new function() {
             }
             this.style = this.element.style;
             this.style.position = "absolute";
+            this.style.display = "none";
             this.style[PREFIX + "TapHighlightColor"] = "rgba(0,0,0,0)";
             this.style[PREFIX + "TouchCallout"] = "none";
             this.style[PREFIX + "UserSelect"] = "none";
@@ -532,11 +532,7 @@ var zz = new function() {
                         }
                         self.removeEventListener(Event.ENTER_FRAME, display);
                     }
-                    if (this._visible) {
-                        this.addEventListener(Event.ENTER_FRAME, display);
-                    } else {
-                        this.style.display = "none";
-                    }
+                    this.addEventListener(Event.ENTER_FRAME, display);
                 }
             },
             backgroundColor: {
@@ -1064,18 +1060,18 @@ var zz = new function() {
                 }
             },
             render: function() {
-                if (this._visible) {
-                    if (this.loaded) {
-                        if (this._canvasDirty) {
-                            this.context.clearRect(0, 0, this._width, this._height);
-                            if (this.imageData) {
-                                this.context.putImageData(this.imageData, 0, 0);
-                            } else {
-                                this.context.drawImage(this.img, this.tx, this.ty, this.tw, this.th, 0, 0, this._width, this._height);
-                            }
-                            this._canvasDirty = false;
+                if (this.loaded) {
+                    if (this._canvasDirty) {
+                        this.context.clearRect(0, 0, this._width, this._height);
+                        if (this.imageData) {
+                            this.context.putImageData(this.imageData, 0, 0);
+                        } else {
+                            this.context.drawImage(this.img, this.tx, this.ty, this.tw, this.th, 0, 0, this._width, this._height);
                         }
+                        this._canvasDirty = false;
                     }
+                }
+                if (this._visible) {
                     DisplayObjectContainer.prototype.render.call(this);
                 }
             },
@@ -1241,7 +1237,11 @@ var zz = new function() {
                             }
                         }
                         if (event) {
-                            this.dispatchEvent(event);
+                            if (typeof event == "function") {
+                                event.call(this);
+                            } else {
+                                this.dispatchEvent(event);
+                            }
                         }
                     }
                     this._mcDirty = false;
@@ -1281,6 +1281,8 @@ var zz = new function() {
         var _TextField = function() {
             DisplayObject.apply(this);
             this.text = "";
+            this.style.visibility = "hidden";
+            this.visible = true;
         };
         _TextField.prototype = createClass(DisplayObject, {
             defaultTextFormat: {
@@ -1328,11 +1330,7 @@ var zz = new function() {
                         }
                         self.removeEventListener(Event.ENTER_FRAME, display);
                     }
-                    if (this._visible) {
-                        this.addEventListener(Event.ENTER_FRAME, display);
-                    } else {
-                        this.style.visibility = "hidden";
-                    }
+                    this.addEventListener(Event.ENTER_FRAME, display);
                 }
             },
             width: {

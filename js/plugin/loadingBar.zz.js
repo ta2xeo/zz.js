@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.2
+ * @version       0.0.3
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -26,7 +26,7 @@ zz.preload = new function() {
         }
         var maxAssetsCount = assetsCount;
         var base = (function() {
-            var base = new Stage("progress");
+            var base = new zz.Stage("progress");
             base.style.position = "absolute";
             base.referencePoint = zz.ReferencePoint.CENTER;
             base.x = window.innerWidth / 2;
@@ -46,7 +46,7 @@ zz.preload = new function() {
         var width = base.width - 10;
 
         function entityBar() {
-            var bar = new Sprite();
+            var bar = new zz.Sprite();
             bar.x = 5;
             bar.y = 2;
             bar.width = width;
@@ -79,7 +79,7 @@ zz.preload = new function() {
         var bar = entityBar();
         base.addChild(bar);
         var wait = 5;  // prevent invisible
-        bar.addEventListener(Event.ENTER_FRAME, function() {
+        bar.addEventListener(zz.Event.ENTER_FRAME, function() {
             var percent = (maxAssetsCount - assetsCount) * 100 / maxAssetsCount;
             var limit = Math.floor(percent * width / 100);
             progress += 10;
