@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.1.4
+ * @version       0.1.5
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -912,6 +912,46 @@ var zz = new function() {
         };
 
         _Sprite.prototype = createClass(DisplayObjectContainer, {
+            tx: {
+                get: function() {
+                    return this._tx;
+                },
+                set: function(tx) {
+                    this._canvasDirty = true;
+                    this._tx = tx;
+                }
+            },
+            ty: {
+                get: function() {
+                    return this._ty;
+                },
+                set: function(ty) {
+                    this._canvasDirty = true;
+                    this._ty = ty;
+                }
+            },
+            tw: {
+                get: function() {
+                    return this._tw;
+                },
+                set: function(tw) {
+                    this._canvasDirty = true;
+                    this._tw = tw;
+                    this.context.clearRect(0, 0, this._width, this._height);
+                    this._width = tw;
+                }
+            },
+            th: {
+                get: function() {
+                    return this._th;
+                },
+                set: function(th) {
+                    this._canvasDirty = true;
+                    this._th = th;
+                    this.context.clearRect(0, 0, this._width, this._height);
+                    this._height = th;
+                }
+            },
             width: {
                 get: function() {
                     var _super = Object.getOwnPropertyDescriptor(DisplayObject.prototype, "width");

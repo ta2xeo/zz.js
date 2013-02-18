@@ -55,7 +55,7 @@ zz.spriteAnimation = new function() {
         /**
          * 複数の絵からアニメーションを作る
          */
-        loadImages: function(images) {
+        loadAnimation: function(images) {
             if (!(images instanceof Array)) {
                 images = Array.prototype.slice.call(arguments);
             }
@@ -71,7 +71,7 @@ zz.spriteAnimation = new function() {
                 this.addChild(spr);
             }
             if (len > 0) {
-                this.setSpriteAnimation();
+                this.setAnimationInterval();
             }
         },
         changeSprite: function(index) {
@@ -87,13 +87,12 @@ zz.spriteAnimation = new function() {
         },
         setSpriteByIndex: function(index) {
             var frame = index * this.intervalFrame + 1;
-            console.log(frame);
             this.setFrame(frame);
         },
         /**
          * スプライトの切り替え間隔を指定する
          */
-        setSpriteAnimation: function(intervalFrame) {
+        setAnimationInterval: function(intervalFrame) {
             if (intervalFrame) {
                 this.intervalFrame = intervalFrame;
             } else {
@@ -110,7 +109,7 @@ zz.spriteAnimation = new function() {
                 };
             }
             var func = anim[timeLine].event;
-            // 関数呼んでるのは途中で切り替えても動作するようにしたい為。
+            // 関数呼んでるのはloopを途中で切り替えても動作するようにしたい為。
             anim[timeLine].event = function() {
                 func.call(this);
                 if (!this.loop) {
@@ -118,16 +117,88 @@ zz.spriteAnimation = new function() {
                 }
             };
             this.setAnimation(anim);
-        },
-        /**
-         * 一枚のスプライトシートから切り分けてアニメーションを作る
-         * 未実装
-         */
-        loadSpriteSheet: function(sheet) {
-            throw new Error("Not implemented error.");
         }
     });
 
+    /**
+     * １枚の絵からアニメーションを生成するクラス
+     * @extends SpriteAnimation
+     * @constructor
+     */
+    function SpriteSheetAnimation() {
+        SpriteAnimation.apply(this);
+    }
+    SpriteSheetAnimation.prototype = zz.createClass(SpriteAnimation, {
+        /**
+         * 一枚のスプライトシートから切り分けてアニメーションを作る
+         * @param {String} sheet 画像パス
+         * @param {Int} width 切り取る絵の横幅
+         * @param {Int} height 切り取る絵の縦幅
+         * @param {Int} count 何枚のアニメーションか
+         */
+        loadAnimation: function(sheet, width, height, count) {
+            this.chipWidth = width;
+            this.chipHeight = height;
+            this.chipCount = count;
+            var path = this.prefix + sheet + this.suffix;
+            var spr = new zz.MovieClip(path);
+            spr.visible = false;
+            this.loadCount = 0;
+            var self = this;
+            spr.addEventListener(zz.Event.COMPLETE, function() {
+                self.setAnimationInterval();
+                self.loadComplete(spr)();
+                spr.visible = true;
+            });
+            this.sprites = new Array();
+            this.sprites.push(spr);
+            this.addChild(spr);
+        },
+        setAnimationInterval: function(intervalFrame) {
+            if (intervalFrame) {
+                this.intervalFrame = intervalFrame;
+            } else if (!this.intervalFrame) {
+                this.intervalFrame = 1;
+            }
+            var anim = new Object();
+            var spr = this.sprites[0];
+            var w_cnt = spr.width / this.chipWidth;
+            var h_cnt = spr.height / this.chipHeight;
+            var timeLine = 1;
+            for (var i = 0; i < h_cnt; i++) {
+                for (var j = 0; j < w_cnt; j++) {
+                    anim[timeLine] = {
+                        tx: j * this.chipWidth,
+                        ty: i * this.chipHeight,
+                        tw: this.chipWidth,
+                        th: this.chipHeight,
+                        stop: true
+                    };
+                    ++timeLine;
+                }
+            }
+            spr.setAnimation(anim);
+
+            anim = new Object();
+            timeLine = 1;
+            for (i = 0; i < this.chipCount; i++) {
+                if (i !== 0) {
+                    timeLine += this.intervalFrame;
+                }
+                anim[timeLine] = {
+                    event: function() {
+                        spr.play();
+                    }
+                };
+            }
+            anim[timeLine].event = function() {
+                if (!this.loop) {
+                    this.stop();
+                }
+            };
+            this.setAnimation(anim);
+        }
+    });
 
     return zz.modularize(
         {
@@ -135,7 +206,8 @@ zz.spriteAnimation = new function() {
         },
         {
             EVENT_LOAD_SPRITES: EVENT_LOAD_SPRITES,
-            SpriteAnimation: SpriteAnimation
+            SpriteAnimation: SpriteAnimation,
+            SpriteSheetAnimation: SpriteSheetAnimation
         }
     );
 };
