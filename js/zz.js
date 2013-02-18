@@ -75,13 +75,13 @@ var zz = new function() {
                 }
             },
             {
-                pattern: /Mozilla\/5.0 \((Windows NT) (\d+\.\d+); .*\)/,
+                pattern: /Mozilla\/5.0 \(Windows NT/,
                 os: "Windows",
                 model: function(match) {
-                    return match[1];
+                    return "Windows";
                 },
                 version: function(match) {
-                    return parseFloat(match[2]);
+                    return 1
                 }
             },
             {
