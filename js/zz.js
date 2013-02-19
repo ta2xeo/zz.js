@@ -81,7 +81,7 @@ var zz = new function() {
                     return "Windows";
                 },
                 version: function(match) {
-                    return 1
+                    return 1;
                 }
             },
             {
