@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.1.5
+ * @version       0.1.6
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -713,12 +713,10 @@ var zz = new function() {
                 }
             },
             render: function() {
-                if (this._visible) {
-                    DisplayObject.prototype.render.call(this);
-                    for (var i = 0, len = this.numChildren; i < len; i++) {
-                        if (this.children[i]) {
-                            this.children[i].render();
-                        }
+                DisplayObject.prototype.render.call(this);
+                for (var i = 0, len = this.numChildren; i < len; i++) {
+                    if (this.children[i]) {
+                        this.children[i].render();
                     }
                 }
             },
@@ -1111,9 +1109,7 @@ var zz = new function() {
                         this._canvasDirty = false;
                     }
                 }
-                if (this._visible) {
-                    DisplayObjectContainer.prototype.render.call(this);
-                }
+                DisplayObjectContainer.prototype.render.call(this);
             },
             getImageData: function() {
                 if (this._originalImageData === null) {
