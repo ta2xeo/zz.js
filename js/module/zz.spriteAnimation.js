@@ -3,20 +3,23 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.1
+ * @version       0.0.2
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
 
 zz.spriteAnimation = new function() {
     // スプライト画像のロード完了時に発行されるイベント
-    var EVENT_LOAD_SPRITES = "__load_sprites__";
+    var SpriteEvent = {
+        LOAD_SPRITES: "__load_sprites__",
+        ANIMATION_END: "__animation_end__"
+    };
 
     // 画像のパス。共通のURLやパスはこれを設定すると省略できる。
-    var _imagesPath = "";
+    var _imagePath = "";
 
-    function setImagesPath(path) {
-        _imagesPath = path;
+    function setImagePath(path) {
+        _imagePath = path;
     }
 
     /**
@@ -34,7 +37,7 @@ zz.spriteAnimation = new function() {
     }
     SpriteAnimation.prototype = zz.createClass(zz.MovieClip, {
         setCommonPath: function(prefix, suffix) {
-            this.prefix = _imagesPath + prefix;
+            this.prefix = _imagePath + prefix;
             this.suffix = suffix;
         },
         loadComplete: function(spr) {
@@ -46,7 +49,7 @@ zz.spriteAnimation = new function() {
                     if (self.autoPlay) {
                         self.gotoAndPlay(1);
                     }
-                    self.dispatchEvent(EVENT_LOAD_SPRITES);
+                    self.dispatchEvent(SpriteEvent.LOAD_SPRITES);
                 }
                 spr.removeEventListener(zz.Event.COMPLETE, comp);
             }
@@ -95,28 +98,35 @@ zz.spriteAnimation = new function() {
         setAnimationInterval: function(intervalFrame) {
             if (intervalFrame) {
                 this.intervalFrame = intervalFrame;
-            } else {
+            } else if (!this.intervalFrame) {
                 this.intervalFrame = 1;
             }
-            var anim = new Object();
-            var timeLine = 1;
+            var data = this._getAnimationData();
+            // 関数呼んでるのはloopを途中で切り替えても動作するようにしたい為。
+            data.anim[data.timeLine + this.intervalFrame - 1] = {
+                event: function() {
+                    if (!this.loop) {
+                        this.stop();
+                    }
+                    this.dispatchEvent(SpriteEvent.ANIMATION_END);
+                }
+            };
+            this.setAnimation(data.anim);
+        },
+        _getAnimationData: function() {
+            var data = {
+                anim: new Object(),
+                timeLine: 1
+            };
             for (var i = 0, len = this.numChildren; i < len; i++) {
                 if (i !== 0) {
-                    timeLine += this.intervalFrame;
+                    data.timeLine += this.intervalFrame;
                 }
-                anim[timeLine] = {
+                data.anim[data.timeLine] = {
                     event: this.changeSprite(i)
                 };
             }
-            var func = anim[timeLine].event;
-            // 関数呼んでるのはloopを途中で切り替えても動作するようにしたい為。
-            anim[timeLine].event = function() {
-                func.call(this);
-                if (!this.loop) {
-                    this.stop();
-                }
-            };
-            this.setAnimation(anim);
+            return data;
         }
     });
 
@@ -160,11 +170,15 @@ zz.spriteAnimation = new function() {
             } else if (!this.intervalFrame) {
                 this.intervalFrame = 1;
             }
+            var data = this._getAnimationData();
+            this._setAnimationInterval();
+        },
+        _getAnimationData: function() {
+            var timeLine = 1;
             var anim = new Object();
             var spr = this.sprites[0];
             var w_cnt = spr.width / this.chipWidth;
             var h_cnt = spr.height / this.chipHeight;
-            var timeLine = 1;
             for (var i = 0; i < h_cnt; i++) {
                 for (var j = 0; j < w_cnt; j++) {
                     anim[timeLine] = {
@@ -179,33 +193,29 @@ zz.spriteAnimation = new function() {
             }
             spr.setAnimation(anim);
 
-            anim = new Object();
-            timeLine = 1;
+            var data = {
+                anim: new Object(),
+                timeLine: 1
+            };
             for (i = 0; i < this.chipCount; i++) {
                 if (i !== 0) {
-                    timeLine += this.intervalFrame;
+                    data.timeLine += this.intervalFrame;
                 }
-                anim[timeLine] = {
+                data.anim[data.timeLine] = {
                     event: function() {
                         spr.play();
                     }
                 };
             }
-            anim[timeLine].event = function() {
-                if (!this.loop) {
-                    this.stop();
-                }
-            };
-            this.setAnimation(anim);
         }
     });
 
     return zz.modularize(
         {
-            setImagesPath: setImagesPath
+            setImagePath: setImagePath
         },
         {
-            EVENT_LOAD_SPRITES: EVENT_LOAD_SPRITES,
+            SpriteEvent: SpriteEvent,
             SpriteAnimation: SpriteAnimation,
             SpriteSheetAnimation: SpriteSheetAnimation
         }
