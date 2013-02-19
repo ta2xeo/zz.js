@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.1.6
+ * @version       0.1.7
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -879,8 +879,8 @@ var zz = new function() {
                     self.height = self.img.height;
                     self.canvas.width = self._width;
                     self.canvas.height = self._height;
-                    self.tw = self._width;
-                    self.th = self._height;
+                    self.tw = self._clearWidth = self._width;
+                    self.th = self._clearHeight = self._height;
                     self.referencePoint = self._reference;
                     self.trimming(self.tx, self.ty, self.tw, self.th);
                     self.loaded = true;
@@ -897,8 +897,8 @@ var zz = new function() {
             }
             this.tx = 0;
             this.ty = 0;
-            this.tw = this._width;
-            this.th = this._height;
+            this.tw = this._clearWidth = this._width;
+            this.th = this._clearHeight = this._height;
             this.loaded = false;
             this.imageData = null;
             this._originalImageData = null;
@@ -934,9 +934,10 @@ var zz = new function() {
                 },
                 set: function(tw) {
                     this._canvasDirty = true;
-                    this._tw = tw;
-                    this.context.clearRect(0, 0, this._width, this._height);
-                    this._width = tw;
+                    if (tw > this._clearWidth) {
+                        this._clearWidth = tw;
+                    }
+                    this._width = this._tw = tw;
                 }
             },
             th: {
@@ -945,9 +946,10 @@ var zz = new function() {
                 },
                 set: function(th) {
                     this._canvasDirty = true;
-                    this._th = th;
-                    this.context.clearRect(0, 0, this._width, this._height);
-                    this._height = th;
+                    if (th > this._clearHeight) {
+                        this._clearHeight = th;
+                    }
+                    this._height = this._th = th;
                 }
             },
             width: {
@@ -1100,7 +1102,9 @@ var zz = new function() {
             render: function() {
                 if (this.loaded) {
                     if (this._canvasDirty) {
-                        this.context.clearRect(0, 0, this._width, this._height);
+                        this.context.clearRect(0, 0, this._clearWidth, this._clearHeight);
+                        this._clearWidth = this._width;
+                        this._clearHeight = this._height;
                         if (this.imageData) {
                             this.context.putImageData(this.imageData, 0, 0);
                         } else {

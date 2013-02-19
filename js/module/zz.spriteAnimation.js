@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.2
+ * @version       0.0.3
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -101,7 +101,11 @@ zz.spriteAnimation = new function() {
             } else if (!this.intervalFrame) {
                 this.intervalFrame = 1;
             }
-            var data = this._getAnimationData();
+            var data = {
+                anim: new Object(),
+                timeLine: 1
+            };
+            this._setAnimationData(data);
             // 関数呼んでるのはloopを途中で切り替えても動作するようにしたい為。
             data.anim[data.timeLine + this.intervalFrame - 1] = {
                 event: function() {
@@ -113,11 +117,7 @@ zz.spriteAnimation = new function() {
             };
             this.setAnimation(data.anim);
         },
-        _getAnimationData: function() {
-            var data = {
-                anim: new Object(),
-                timeLine: 1
-            };
+        _setAnimationData: function(data) {
             for (var i = 0, len = this.numChildren; i < len; i++) {
                 if (i !== 0) {
                     data.timeLine += this.intervalFrame;
@@ -126,7 +126,6 @@ zz.spriteAnimation = new function() {
                     event: this.changeSprite(i)
                 };
             }
-            return data;
         }
     });
 
@@ -164,16 +163,7 @@ zz.spriteAnimation = new function() {
             this.sprites.push(spr);
             this.addChild(spr);
         },
-        setAnimationInterval: function(intervalFrame) {
-            if (intervalFrame) {
-                this.intervalFrame = intervalFrame;
-            } else if (!this.intervalFrame) {
-                this.intervalFrame = 1;
-            }
-            var data = this._getAnimationData();
-            this._setAnimationInterval();
-        },
-        _getAnimationData: function() {
+        _setAnimationData: function(data) {
             var timeLine = 1;
             var anim = new Object();
             var spr = this.sprites[0];
@@ -193,10 +183,6 @@ zz.spriteAnimation = new function() {
             }
             spr.setAnimation(anim);
 
-            var data = {
-                anim: new Object(),
-                timeLine: 1
-            };
             for (i = 0; i < this.chipCount; i++) {
                 if (i !== 0) {
                     data.timeLine += this.intervalFrame;
