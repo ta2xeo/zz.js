@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.3
+ * @version       0.0.4
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -47,7 +47,7 @@ zz.spriteAnimation = new function() {
                 if (self.loadCount === self.sprites.length) {
                     self.spritesLoaded = true;
                     if (self.autoPlay) {
-                        self.gotoAndPlay(1);
+                        self.gotoAndPlay(self.currentFrame);
                     }
                     self.dispatchEvent(SpriteEvent.LOAD_SPRITES);
                 }
@@ -101,31 +101,35 @@ zz.spriteAnimation = new function() {
             } else if (!this.intervalFrame) {
                 this.intervalFrame = 1;
             }
-            var data = {
-                anim: new Object(),
-                timeLine: 1
-            };
-            this._setAnimationData(data);
+            var anim = this._getAnimationData();
+            var tail = Math.max.apply(null, Object.keys(anim)) + this.intervalFrame - 1;
             // 関数呼んでるのはloopを途中で切り替えても動作するようにしたい為。
-            data.anim[data.timeLine + this.intervalFrame - 1] = {
+            var event = anim[tail] && anim[tail].event;
+            anim[tail] = {
                 event: function() {
+                    if (typeof event == "function") {
+                        event.call(this);
+                    }
                     if (!this.loop) {
                         this.stop();
                     }
                     this.dispatchEvent(SpriteEvent.ANIMATION_END);
                 }
             };
-            this.setAnimation(data.anim);
+            this.setAnimation(anim);
         },
-        _setAnimationData: function(data) {
+        _getAnimationData: function() {
+            var anim = new Object();
+            var timeLine = 1;
             for (var i = 0, len = this.numChildren; i < len; i++) {
                 if (i !== 0) {
-                    data.timeLine += this.intervalFrame;
+                    timeLine += this.intervalFrame;
                 }
-                data.anim[data.timeLine] = {
+                anim[timeLine] = {
                     event: this.changeSprite(i)
                 };
             }
+            return anim;
         }
     });
 
@@ -163,36 +167,40 @@ zz.spriteAnimation = new function() {
             this.sprites.push(spr);
             this.addChild(spr);
         },
-        _setAnimationData: function(data) {
-            var timeLine = 1;
+        _getAnimationData: function() {
             var anim = new Object();
+            var timeLine = 1;
+
+            var _anim = new Object();
+            var _timeLine = 1;
             var spr = this.sprites[0];
             var w_cnt = spr.width / this.chipWidth;
             var h_cnt = spr.height / this.chipHeight;
             for (var i = 0; i < h_cnt; i++) {
                 for (var j = 0; j < w_cnt; j++) {
-                    anim[timeLine] = {
+                    _anim[_timeLine] = {
                         tx: j * this.chipWidth,
                         ty: i * this.chipHeight,
                         tw: this.chipWidth,
                         th: this.chipHeight,
                         stop: true
                     };
-                    ++timeLine;
+                    ++_timeLine;
                 }
             }
-            spr.setAnimation(anim);
+            spr.setAnimation(_anim);
 
             for (i = 0; i < this.chipCount; i++) {
                 if (i !== 0) {
-                    data.timeLine += this.intervalFrame;
+                    timeLine += this.intervalFrame;
                 }
-                data.anim[data.timeLine] = {
+                anim[timeLine] = {
                     event: function() {
                         spr.play();
                     }
                 };
             }
+            return anim;
         }
     });
 
