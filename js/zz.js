@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.1.7
+ * @version       0.1.8
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -1322,6 +1322,7 @@ var zz = new function() {
             DisplayObject.apply(this);
             this.text = "";
             this.style.visibility = "hidden";
+            this.style.display = "block";
             this.visible = true;
         };
         _TextField.prototype = createClass(DisplayObject, {
