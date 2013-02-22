@@ -147,7 +147,7 @@ zz.debug = new function() {
                 element.style.top  = offsetY + event.clientY - relativeY + "px";
                 event.preventDefault();
             }
-        };
+        }
     }
 
     function createStatusWindow() {
@@ -383,14 +383,14 @@ zz.debug = new function() {
                         setSelectLine(displayObject);
                         displayObject.opened ^= true;
                         openChildren();
-                    }
+                    };
                     var name = Object.prototype.toString.apply(displayObject);
                     if (displayObject.name) {
                         name += " [" + displayObject.name + "]";
                     }
                     e.value = name;
                     return e;
-                };
+                }
                 group.appendChild(createInput());
                 parentElement.appendChild(group);
                 openChildren();
