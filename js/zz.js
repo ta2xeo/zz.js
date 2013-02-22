@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.1.8
+ * @version       0.1.9
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -284,7 +284,7 @@ var zz = new function() {
                     if (this.eventContainer[eventName][i] == undefined) {
                         result |= this.eventContainer[eventName].splice(i, 1);
                     } else {
-                        result |= this.eventContainer[eventName][i](obj);
+                        result |= this.eventContainer[eventName][i].call(this, obj);
                     }
                 }
                 return result;
@@ -302,7 +302,7 @@ var zz = new function() {
          * @constructor
          */
         var _DisplayObject = function() {
-            EventDispatcher.apply(this);
+            _zz.EventDispatcher.apply(this);
             if (!this.element) {
                 this.element = document.createElement("div");
             }
@@ -312,7 +312,7 @@ var zz = new function() {
             this.style[PREFIX + "TapHighlightColor"] = "rgba(0,0,0,0)";
             this.style[PREFIX + "TouchCallout"] = "none";
             this.style[PREFIX + "UserSelect"] = "none";
-            this._name = "";
+            this.name = "";
             this.parent = null;
             this.x = 0;
             this.y = 0;
@@ -343,11 +343,15 @@ var zz = new function() {
             if (ENV.TOUCH_ENABLED) {
                 if (event.touches.length) {
                     e.x = event.touches[0].clientX - rect.left << 0;
+                    e.globalX = e.x + self.x;
                     e.y = event.touches[0].clientY - rect.top << 0;
+                    e.globalY = e.y + self.y;
                 }
             } else {
                 e.x = event.clientX - rect.left << 0;
+                e.globalX = e.x + self.x;
                 e.y = event.clientY - rect.top << 0;
+                e.globalY = e.y + self.y;
             }
             var stop = self.dispatchEvent(e);
             if (stop) {
@@ -408,8 +412,15 @@ var zz = new function() {
                 },
                 set: function(name) {
                     if (this.parent) {
-                        this.parent.nameMap[this._name] = null;
-                        this.parent.nameMap[name] = this;
+                        if (this._name in this.parent.nameMap) {
+                            this.parent.nameMap[this._name] = null;
+                        }
+                        if (name in this.parent.nameMap) {
+                            throw new Error("duplicate key error. " + name + " is already defined.");
+                        }
+                        if (name) {
+                            this.parent.nameMap[name] = this;
+                        }
                     }
                     this._name = name;
                 }
@@ -445,13 +456,7 @@ var zz = new function() {
             },
             width: {
                 get: function() {
-                    var w = this._width * this.scaleX;
-                    var parent = this.parent;
-                    while (parent) {
-                        w *= parent.scaleX;
-                        parent = parent.parent;
-                    }
-                    return w;
+                    return this._width;
                 },
                 set: function(width) {
                     this._width = width;
@@ -461,13 +466,7 @@ var zz = new function() {
             },
             height: {
                 get: function() {
-                    var h = this._height * this.scaleY;
-                    var parent = this.parent;
-                    while (parent) {
-                        h *= parent.scaleY;
-                        parent = parent.parent;
-                    }
-                    return h;
+                    return this._height;
                 },
                 set: function(height) {
                     this._height = height;
@@ -545,7 +544,7 @@ var zz = new function() {
             },
             referencePoint: {
                 get: function() {
-                    return this.style[PREFIX + "TransformOrigin"];
+                    return this._reference;
                 },
                 set: function(point) {
                     this._reference = point;
@@ -589,7 +588,7 @@ var zz = new function() {
          * @constructor
          */
         var _DisplayObjectContainer = function() {
-            DisplayObject.apply(this);
+            _zz.DisplayObject.apply(this);
             this.children = new Array();
             this.nameMap = new Object();
         };
@@ -603,6 +602,9 @@ var zz = new function() {
                 this.children.push(child);
                 DisplayObject.prototype.transform.call(child);
                 if (child.name) {
+                    if (child.name in this.nameMap) {
+                        throw new Error("duplicate key error. " + child.name + " is already defined.");
+                    }
                     this.nameMap[child.name] = child;
                 }
             },
@@ -620,6 +622,9 @@ var zz = new function() {
                 this.children.splice(index, 0, child);
                 DisplayObject.prototype.transform.call(child);
                 if (child.name) {
+                    if (child.name in this.nameMap) {
+                        throw new Error("duplicate key error. " + child.name + " is already defined.");
+                    }
                     this.nameMap[child.name] = child;
                 }
             },
@@ -766,7 +771,7 @@ var zz = new function() {
                 document.body.appendChild(root);
             }
             this.element = root;
-            DisplayObjectContainer.apply(this);
+            _zz.DisplayObjectContainer.apply(this);
             this.frameRate = DEFAULT_FRAMERATE;
             this.x = 0;
             this.y = 0;
@@ -868,7 +873,7 @@ var zz = new function() {
          */
         var _Sprite = function(fileName, x, y) {
             this.canvas = document.createElement("canvas");
-            DisplayObjectContainer.apply(this);
+            _zz.DisplayObjectContainer.apply(this);
             this.canvas.style.position = "absolute";
             this.context = this.canvas.getContext("2d");
             this.element.appendChild(this.canvas);
@@ -1152,7 +1157,7 @@ var zz = new function() {
          * @constructor
          */
         var _MovieClip = function(fileName, x, y) {
-            Sprite.apply(this, arguments);
+            _zz.Sprite.apply(this, arguments);
             this.currentFrame = 1;
             this.frames = new Array();
             this.playing = true;
@@ -1319,7 +1324,7 @@ var zz = new function() {
      */
     var TextField = new function() {
         var _TextField = function() {
-            DisplayObject.apply(this);
+            _zz.DisplayObject.apply(this);
             this.text = "";
             this.style.visibility = "hidden";
             this.style.display = "block";
@@ -1405,7 +1410,7 @@ var zz = new function() {
             if (retry--) {
                 img.src = src;
             } else {
-                throw new Error('Cannot load image files: ' + src);
+                throw new Error('Could not load image files: ' + src);
             }
         };
 
@@ -1429,7 +1434,7 @@ var zz = new function() {
                 if (retry--) {
                     load();
                 } else {
-                    throw new Error('Cannot load script files: ' + src);
+                    throw new Error('Could not load script files: ' + src);
                 }
             };
             script.onload = function() {
