@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.1
+ * @version       0.0.2
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -177,26 +177,22 @@ zz.debug = new function() {
             name.innerHTML = property.title + ":";
             var input = document.createElement("input");
             input.addEventListener("mousedown", function(event) {
-                event.preventDefault();
                 event.stopPropagation();
             });
             input.addEventListener("mousemove", function(event) {
                 event.preventDefault();
                 event.stopPropagation();
             });
-            input.addEventListener("mouseup", function(event) {
-                input.focus();
-                input.select();
-            });
             input.addEventListener("click", function(event) {
-                var value = null;
-                if (property.type == "checkbox") {
-                    value = input.checked;
+                if (selected) {
+                    var value = null;
+                    if (property.type == "checkbox") {
+                        value = input.checked;
+                    }
+                    if (value !== null) {
+                        selected[key] = value;
+                    }
                 }
-                if (value !== null) {
-                    selected[key] = value;
-                }
-                event.preventDefault();
             });
             input.addEventListener("input", function(event) {
                 if (selected && input.value) {
@@ -452,12 +448,7 @@ zz.debug = new function() {
             input.max = 60;
             input.min = 1;
             input.value = actuallyFrameRate;
-            input.onmouseup = function(event) {
-                input.focus();
-                input.select();
-            };
             input.addEventListener("mousedown", function(event) {
-                event.preventDefault();
                 event.stopPropagation();
             });
 
