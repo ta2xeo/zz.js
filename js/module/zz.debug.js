@@ -360,7 +360,7 @@ zz.debug = new function() {
                 var group = document.createElement("div");
                 var s = group.style;
                 s.outline = "";
-                s.margin = "5px 0px";
+                s.margin = "5px 15px";  // インデント付ける
 
                 function openChildren() {
                     if (displayObject.opened) {
