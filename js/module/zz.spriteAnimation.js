@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.4
+ * @version       0.0.5
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -77,7 +77,7 @@ zz.spriteAnimation = new function() {
                 this.setAnimationInterval();
             }
         },
-        changeSprite: function(index) {
+        _changeSprite: function(index) {
             return function() {
                 for (var i = 0, len = this.numChildren; i < len; i++) {
                     if (index === i) {
@@ -88,21 +88,46 @@ zz.spriteAnimation = new function() {
                 }
             };
         },
+        /**
+         * スプライトをindex番目に切り替える
+         * @param {Int} index 0から始まる
+         */
         setSpriteByIndex: function(index) {
-            var frame = index * this.intervalFrame + 1;
-            this.setFrame(frame);
+            if (this.spritesIndices) {
+                var frame = this.spritesIndices[index];
+                if (!frame) {
+                    throw new Error("invalid index.");
+                }
+                this.setFrame(frame);
+            } else {
+                throw new Error("sprites are not loaded yet.");
+            }
         },
         /**
          * スプライトの切り替え間隔を指定する
          */
         setAnimationInterval: function(intervalFrame) {
             if (intervalFrame) {
-                this.intervalFrame = intervalFrame;
-            } else if (!this.intervalFrame) {
-                this.intervalFrame = 1;
+                if (intervalFrame instanceof Array) {
+                    this.intervalFrames = new Array();
+                    var interval = 1;
+                    for (var i = 0, len = intervalFrame.length; i < len; i++) {
+                        interval = intervalFrame[i] || interval;
+                        this.intervalFrames.push(interval);
+                    }
+                } else {
+                    this.intervalFrames = [intervalFrame];
+                }
+            } else if (!this.intervalFrames) {
+                this.intervalFrames = [1];
             }
             var anim = this._getAnimationData();
-            var tail = Math.max.apply(null, Object.keys(anim)) + this.intervalFrame - 1;
+            var keys = Object.keys(anim);
+            if (keys.length === 0) {
+                return;
+            }
+            var lastInterval = this.intervalFrames[this.intervalFrames.length - 1];
+            var tail = Math.max.apply(null, keys) + lastInterval - 1;
             // 関数呼んでるのはloopを途中で切り替えても動作するようにしたい為。
             var event = anim[tail] && anim[tail].event;
             anim[tail] = {
@@ -120,14 +145,16 @@ zz.spriteAnimation = new function() {
         },
         _getAnimationData: function() {
             var anim = new Object();
+            this.spritesIndices = new Array();
             var timeLine = 1;
+            var interval = 1;
             for (var i = 0, len = this.numChildren; i < len; i++) {
-                if (i !== 0) {
-                    timeLine += this.intervalFrame;
-                }
+                this.spritesIndices.push(timeLine);
                 anim[timeLine] = {
-                    event: this.changeSprite(i)
+                    event: this._changeSprite(i)
                 };
+                interval = this.intervalFrames[i] || interval;
+                timeLine += interval;
             }
             return anim;
         }
@@ -190,15 +217,20 @@ zz.spriteAnimation = new function() {
             }
             spr.setAnimation(_anim);
 
+            var interval = 1;
+            this.spritesIndices = new Array();
             for (i = 0; i < this.chipCount; i++) {
-                if (i !== 0) {
-                    timeLine += this.intervalFrame;
-                }
+                this.spritesIndices.push(timeLine);
                 anim[timeLine] = {
-                    event: function() {
-                        spr.play();
-                    }
+                    event: (function() {
+                        var frame = i + 1;
+                        return function() {
+                            spr.setFrame(frame);
+                        };
+                    })()
                 };
+                interval = this.intervalFrames[i] || interval;
+                timeLine += interval;
             }
             return anim;
         }
