@@ -3,29 +3,313 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.2
+ * @version       0.0.3
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
+ * 読み込むだけで機能が有効になります。
+ * 一緒にcss/debug.css, js/module/zz.keyboard.jsも読み込んで下さい。
+ * 例）
+ *   <link rel="stylesheet" type="text/css" href="./css/debug.css" />
+ *   <script src="./js/module/zz.keyboard.js"></script>
+ *   <script src="./js/module/zz.debug.js"></script>
  */
 "use strict";
 
 zz.debug = new function() {
     var RP = zz.ReferencePoint;
-    var REDRAW = "__redraw__";
+    var DebugEvent = {
+        REDRAW: "__redraw__",
+        UPDATE_TREE: "__update_tree__"
+    };
 
     // 選択中のDisplayObject
     var selected = null;
 
-    // 情報の更新の必要がある場合trueにする。
-    var modified = false;
+    // プロパティの情報
+    var properties = [
+        {"property": "x", "title": "X", "type": inputNumber, "ratio": 1},
+        {"property": "y", "title": "Y", "type": inputNumber, "ratio": 1},
+        {"property": "width", "title": "W", "type": inputNumber, "ratio": 1},
+        {"property": "height", "title": "H", "type": inputNumber, "ratio": 1},
+        {"property": "rotation", "title": "回転", "type": inputNumber, "ratio": 1},
+        {"property": "alpha", "title": "アルファ(％)", "type": inputNumber, "ratio": 100},
+        {"property": "scaleX", "title": "X(％)", "type": inputNumber, "ratio": 100},
+        {"property": "scaleY", "title": "Y(％)", "type": inputNumber, "ratio": 100},
+        {"property": "visible", "title": "表示", "type": inputCheckbox},
+        {"property": "referencePoint", "title": "参照位置", "type": referencePointList},
+        {"property": "timeLine", "title": "MC(-/-)", "type": inputRange}
+    ];
 
+    /**
+     * データのロード
+     * 現状はlocalStorageを使ってるだけ
+     * 無ければnullを返す
+     */
+    function loadData(key) {
+        return window.localStorage.getItem(key) || null;
+    }
+
+    /**
+     * データ保存
+     * 現状はlocalStorageを使ってるだけ
+     */
+    function saveData(key, value) {
+        window.localStorage.setItem(key, value);
+    }
+
+    /**
+     * 移動可能なウィンドウを作成する
+     * @param {String} id 識別用IDでユニークでなければならない
+     * @param {String} title ウィンドウのタイトルバーに表示される文字
+     * @param {Object} defaults デフォルトのstyleをオブジェクト形式で渡せる
+     */
+    function createWindow(id, title, defaults) {
+        var windowElement = document.createElement("div");
+        windowElement.id = id;
+        windowElement.className = "window";
+        if (defaults) {
+            for (var property in defaults) {
+                var val = defaults[property];
+                windowElement.style[property] = val;
+            }
+        }
+
+        var titleElement = document.createElement("div");
+        titleElement.className = "title";
+        titleElement.innerHTML = title;
+        windowElement.appendChild(titleElement);
+
+        // ドラッグ可能にする
+        (function() {
+            var dragging = false, relativeX, relativeY;
+            var saveX = loadData(id + "X");
+            var saveY = loadData(id + "Y");
+
+            if (saveX && saveY) {
+                windowElement.style.position = "absolute";
+                windowElement.style.left = saveX;
+                windowElement.style.top = saveY;
+                windowElement.style.bottom = "";
+                windowElement.style.right = "";
+            }
+
+            function move(event) {
+                if (dragging) {
+                    var offsetX = window.pageXOffset;
+                    var offsetY = window.pageYOffset;
+                    windowElement.style.left = offsetX + event.clientX - relativeX + "px";
+                    windowElement.style.top  = offsetY + event.clientY - relativeY + "px";
+                    event.preventDefault();
+                }
+            }
+
+            titleElement.addEventListener("mousedown", function(event) {
+                dragging = true;
+                relativeX = event.layerX;
+                relativeY = event.layerY;
+                var rect = windowElement.getBoundingClientRect();
+                var offsetX = window.pageXOffset;
+                var offsetY = window.pageYOffset;
+                windowElement.style.left = offsetX + rect.left + "px";
+                windowElement.style.top = offsetY + rect.top + "px";
+                windowElement.style.bottom = "";
+                windowElement.style.right = "";
+                windowElement.style.position = "absolute";
+                document.addEventListener("mousemove", move);
+                event.preventDefault();
+                event.stopPropagation();
+            });
+
+            function release(event) {
+                dragging = false;
+                document.removeEventListener("mousemove", move);
+                saveData(id + "X", windowElement.style.left);
+                saveData(id + "Y", windowElement.style.top);
+                event.preventDefault();
+            }
+
+            titleElement.addEventListener("mouseup", release);
+        })();
+
+        return windowElement;
+    }
+
+    /**
+     * プロパティ確認用ウィンドウ作成
+     */
+    function createPropertyWindow() {
+        var window = createWindow("property", "プロパティ", {
+            position: "absolute",
+            right: "0px",
+            bottom: "0px"
+        });
+        document.body.appendChild(window);
+
+        for (var i = 0; i < properties.length; i++) {
+            var property = properties[i];
+            window.appendChild(property.type(property));
+        }
+        return window;
+    }
+    window.addEventListener("load", createPropertyWindow);
+
+    /**
+     * input系で共通なもの
+     */
+    function inputCommon(property) {
+        var element = document.createElement("div");
+        var title = document.createElement("span");
+        title.innerHTML = property.title + ":";
+        var input = document.createElement("input");
+        input.addEventListener("mousedown", function(event) {
+            event.stopPropagation();
+        });
+        input.addEventListener("mousemove", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+        property.title = title;
+        property.input = input;
+        property.element = element;
+        element.appendChild(title);
+        element.appendChild(input);
+        return element;
+    }
+
+    /**
+     * <input type="number">
+     */
+    function inputNumber(property) {
+        var propertyName = property.property;
+        var element = inputCommon(property);
+        var input = property.input;
+        input.type = "number";
+
+        input.addEventListener("input", function(event) {
+            if (selected && input.value) {
+                var value = null;
+                var num = parseInt(input.value, 10);
+                if (!isNaN(num)) {
+                    value = num / property.ratio;
+                }
+                if (value !== null) {
+                    selected[propertyName] = value;
+                    selected.dispatchEvent(DebugEvent.REDRAW);
+                    selected.transform();
+                }
+            }
+            event.preventDefault();
+        });
+        return element;
+    }
+
+    /**
+     * <input type="checkbox">
+     */
+    function inputCheckbox(property) {
+        var propertyName = property.property;
+        var element = inputCommon(property);
+        var input = property.input;
+        input.type = "checkbox";
+
+        input.addEventListener("click", function(event) {
+            if (selected) {
+                var value = input.checked;
+                if (value !== null) {
+                    selected[propertyName] = value;
+                    selected.dispatchEvent(zz.Event.ENTER_FRAME);
+                }
+            }
+        });
+        return element;
+    }
+
+    /**
+     * <select>
+     *   <option></option>
+     * </select>
+     */
+    function referencePointList(property) {
+        function optionTag(name, point, desc) {
+            return [
+                '<option name="',
+                name,
+                '" value="',
+                point,
+                '">',
+                desc,
+                '</option>'
+            ].join("");
+        }
+        var options = [
+            optionTag("LT", RP.LEFT | RP.TOP, "左上"),
+            optionTag("LM", RP.LEFT | RP.MIDDLE, "左中"),
+            optionTag("LB", RP.LEFT | RP.BOTTOM, "左下"),
+            optionTag("CT", RP.CENTER | RP.TOP, "中上"),
+            optionTag("CM", RP.CENTER | RP.MIDDLE, "中中"),
+            optionTag("CB", RP.CENTER | RP.BOTTOM, "中下"),
+            optionTag("RT", RP.RIGHT | RP.TOP, "右上"),
+            optionTag("RM", RP.RIGHT | RP.MIDDLE, "右中"),
+            optionTag("RB", RP.RIGHT | RP.BOTTOM, "右下")
+        ].join("");
+
+        var propertyName = property.property;
+        var element = document.createElement("div");
+        var title = document.createElement("span");
+        title.innerHTML = property.title + ":";
+        var select = document.createElement("select");
+        select.innerHTML = options;
+        select.addEventListener("mouseup", function(event) {
+            var pos = select.options[select.selectedIndex].value;
+            if (selected) {
+                selected[propertyName] = pos;
+                selected.transform();
+            }
+        });
+        element.appendChild(select);
+        property.input = select;
+        return element;
+    }
+
+    /**
+     * <input type="range">
+     */
+    function inputRange(property) {
+        var propertyName = property.property;
+        var element = inputCommon(property);
+        element.style.display = "none";
+        var input = property.input;
+        input.type = "range";
+        var title = property.title;
+
+        function setTimeLine(event) {
+            if (selected && input.value) {
+                var v = parseInt(input.value, 10);
+                if (selected.playing) {
+                    selected.gotoAndPlay(v);
+                } else {
+                    selected.gotoAndStop(v);
+                }
+            }
+            event.preventDefault();
+        }
+
+        input.addEventListener("change", setTimeLine);
+        input.addEventListener("input", setTimeLine);
+        return element;
+    }
+
+    /**
+     * 選択したDisplayObjectにアウトラインを表示する
+     * @param {DisplayObject} obj 選択対象
+     */
     function setSelectLine(obj) {
         if (selected) {
-            (function clearAllBorder(target) {
+            (function clearAllOutline(target) {
                 target.style.outline = "";
                 if (target instanceof zz.DisplayObjectContainer) {
                     for (var i = 0, len = target.numChildren; i < len; i++) {
                         var c = target.getChildAt(i);
-                        clearAllBorder(c);
+                        clearAllOutline(c);
                     }
                 }
             })(selected);
@@ -47,7 +331,7 @@ zz.debug = new function() {
         var maxDepth = outlines.length;
         var depth = 0;
 
-        (function setAllBorder(target) {
+        (function setAllOutline(target) {
             var outline = outlines[depth];
             target.style.outline = [outline.width, outline.style, outline.color].join(" ");
             ++depth;
@@ -55,7 +339,7 @@ zz.debug = new function() {
                 if (target instanceof zz.DisplayObjectContainer) {
                     for (var i = 0, len = target.numChildren; i < len; i++) {
                         var c = target.getChildAt(i);
-                        setAllBorder(c);
+                        setAllOutline(c);
                     }
                 }
             }
@@ -64,194 +348,12 @@ zz.debug = new function() {
         selected = obj;
     }
 
-    var statusWindow = document.createElement("div");
-
-    function referencePointList() {
-        function optionTag(name, point, desc) {
-            return [
-                '<option name="',
-                name,
-                '" value="',
-                point,
-                '">',
-                desc,
-                '</option>'
-            ].join("");
-        }
-        return [
-            optionTag("LT", RP.LEFT | RP.TOP, "左上"),
-            optionTag("LM", RP.LEFT | RP.MIDDLE, "左中"),
-            optionTag("LB", RP.LEFT | RP.BOTTOM, "左下"),
-            optionTag("CT", RP.CENTER | RP.TOP, "中上"),
-            optionTag("CM", RP.CENTER | RP.MIDDLE, "中中"),
-            optionTag("CB", RP.CENTER | RP.BOTTOM, "中下"),
-            optionTag("RT", RP.RIGHT | RP.TOP, "右上"),
-            optionTag("RM", RP.RIGHT | RP.MIDDLE, "右中"),
-            optionTag("RB", RP.RIGHT | RP.BOTTOM, "右下")
-        ].join("");
-    }
-
-    var properties = {
-        x: {"title": "X", "type": "number", "ratio": 1},
-        y: {"title": "Y", "type": "number", "ratio": 1},
-        width: {"title": "W", "type": "number", "ratio": 1},
-        height: {"title": "H", "type": "number", "ratio": 1},
-        rotation: {"title": "回転", "type": "number", "ratio": 1},
-        alpha: {"title": "アルファ(％)", "type": "number", "ratio": 100},
-        scaleX: {"title": "X(％)", "type": "number", "ratio": 100},
-        scaleY: {"title": "Y(％)", "type": "number", "ratio": 100},
-        visible: {"title": "表示", "type": "checkbox"}, 
-        referencePoint: {"title": "参照位置", "select": referencePointList}
-    };
-
-    // 指定のエレメントに対してドラッグできるようにする
-    function enableDragElement(element, name) {
-        var dragging = false;
-        var relativeX, relativeY;
-        var saveX = window.localStorage.getItem(name + "X");
-        var saveY = window.localStorage.getItem(name + "Y");
-        if (saveX && saveY) {
-            element.style.position = "absolute";
-            element.style.left = saveX;
-            element.style.top = saveY;
-            element.style.bottom = "";
-            element.style.right = "";
-        }
-        element.addEventListener("mousedown", function(event) {
-            var target = event.target;
-            dragging = true;
-            relativeX = event.layerX;
-            relativeY = event.layerY;
-            var rect = element.getBoundingClientRect();
-            var offsetX = window.pageXOffset;
-            var offsetY = window.pageYOffset;
-            element.style.left = offsetX + rect.left + "px";
-            element.style.top = offsetY + rect.top + "px";
-            element.style.bottom = "";
-            element.style.right = "";
-            element.style.position = "absolute";
-            element.addEventListener("mousemove", move);
-        });
-        element.addEventListener("mouseup", function(event) {
-            dragging = false;
-            event.preventDefault();
-            element.removeEventListener("mousemove", move);
-            window.localStorage.setItem(name + "X", element.style.left);
-            window.localStorage.setItem(name + "Y", element.style.top);
-        });
-        function move(event) {
-            if (dragging) {
-                var offsetX = window.pageXOffset;
-                var offsetY = window.pageYOffset;
-                element.style.left = offsetX + event.clientX - relativeX + "px";
-                element.style.top  = offsetY + event.clientY - relativeY + "px";
-                event.preventDefault();
-            }
-        }
-    }
-
-    function createStatusWindow() {
-        var s = statusWindow.style;
-        s.backgroundColor = "#ddd";
-        s.borderRadius = "8px";
-        s.border = "2px solid #bbb";
-        s.display = "inline-block";
-        s.padding = "20px";
-        s.margin = "0px";
-        s.textAlign = "right";
-        if (false) {
-            s.position = "fixed";
-            s.bottom = "0px";
-            s.right = "0px";
-        } else {
-            s.position = "fixed";
-            s.top = "0px";
-            s.right = "0px";
-            enableDragElement(statusWindow, "statusWindow");
-        }
-        document.body.appendChild(statusWindow);
-
-        function inputText(key) {
-            var property = properties[key];
-            var name = document.createElement("div");
-            name.innerHTML = property.title + ":";
-            var input = document.createElement("input");
-            input.addEventListener("mousedown", function(event) {
-                event.stopPropagation();
-            });
-            input.addEventListener("mousemove", function(event) {
-                event.preventDefault();
-                event.stopPropagation();
-            });
-            input.addEventListener("click", function(event) {
-                if (selected) {
-                    var value = null;
-                    if (property.type == "checkbox") {
-                        value = input.checked;
-                    }
-                    if (value !== null) {
-                        selected[key] = value;
-                    }
-                }
-            });
-            input.addEventListener("input", function(event) {
-                if (selected && input.value) {
-                    var value = null;
-                    if (property.type == "number") {
-                        var num = parseInt(input.value, 10);
-                        if (!isNaN(num)) {
-                            value = num / property.ratio;
-                        }
-                    }
-                    if (value !== null) {
-                        selected[key] = value;
-                        selected.dispatchEvent(REDRAW);
-                    }
-                }
-                event.preventDefault();
-            });
-            input.type = property.type;
-            name.appendChild(input);
-            property.input = input;
-            return name;
-        }
-
-        function pulldownMenu(Key) {
-            var property = properties[key];
-            var name = document.createElement("div");
-            name.innerHTML = property.title + ":";
-            var select = document.createElement("select");
-            select.innerHTML = property.select();
-            select.addEventListener("mouseup", function(event) {
-                var pos = select.options[select.selectedIndex].value;
-                if (selected) {
-                    selected[key] = pos;
-                }
-            });
-            name.appendChild(select);
-            property.input = select;
-            return name;
-        }
-
-        for (var key in properties) {
-            var property = properties[key];
-            if (property.type) {
-                statusWindow.appendChild(inputText(key));
-            } else if (property.select) {
-                statusWindow.appendChild(pulldownMenu(key));
-            }
-        }
-    }
-    window.addEventListener("load", createStatusWindow);
-
     /**
-     * DisplayObjectの枠を可視化したりドラッグで操作出来るようにDisplayObject自体を書き換える
+     * DisplayObjectにデバッグ機能を付与する
      */
     function debugDisplayObject() {
         this.opened = false;
-        modified = true;
         this.addEventListener(zz.TouchEvent.TOUCH_DOWN, function() {
-            modified = true;
             this.opened = true;
             setSelectLine(this);
             var current = this.parent;
@@ -259,20 +361,21 @@ zz.debug = new function() {
                 current.opened = true;
                 current = current.parent;
             }
+            this.root.dispatchEvent(DebugEvent.UPDATE_TREE);
             return true;
         });
 
         // Firefoxだとアウトラインが広がるから再描画してやってごまかす。
         if (zz.ENV.RENDERING_ENGINE == "Gecko") {
-            this.addEventListener(REDRAW, function() {
+            this.addEventListener(DebugEvent.REDRAW, function() {
                 var tmp = this.style.outline;
+                var self = this;
                 function outline() {
-                    this.style.outline = tmp;
-                    this.removeEventListener(zz.Event.ENTER_FRAME, outline);
+                    self.style.outline = tmp;
                 }
                 if (tmp) {
                     this.style.outline = "";
-                    this.addEventListener(zz.Event.ENTER_FRAME, outline);
+                    setTimeout(outline, 10);
                 }
             });
         }
@@ -282,7 +385,7 @@ zz.debug = new function() {
      * Stage内のオブジェクトを表示する
      */
     function debugStage() {
-        this.style.border = "3px solid rgba(255, 0, 0, 0.5)";
+        var stage = this;
         this.style.overflow = "";
 
         // キーボードの↑↓←→でオブジェクトを移動できるように。
@@ -311,53 +414,49 @@ zz.debug = new function() {
                     break;
                 }
                 if (match) {
-                    selected.dispatchEvent(REDRAW);
+                    selected.dispatchEvent(DebugEvent.REDRAW);
                     return true;
                 }
             }
             return false;
         });
 
-        // DisplayObjectのマップ表示用div要素
-        var objectMapWindowTitle = document.createElement("div");
-        document.body.appendChild(objectMapWindowTitle);
-        var objectMapWindow = document.createElement("div");
-        (function() {
-            var s = objectMapWindow.style;
-            s.position = "fixed";
-            s.left = "0px";
-            s.bottom = "0px";
-            s.backgroundColor = "rgba(200, 200, 200, 0.7)";
-            s.borderRadius = "8px";
-            s.border = "2px solid #bbb";
-            s.display = "inline-block";
-            s.padding = "20px";
-            s.margin = "0px";
-            document.body.appendChild(objectMapWindow);
-        })();
+        // DisplayObjectのツリー表示用div要素
+        function createObjectTreeWindow() {
+            var window = createWindow("objectTree", "DisplayObject Tree", {
+                position: "absolute",
+                left: "0px",
+                bottom: "0px"
+            });
+            document.body.appendChild(window);
+            return window;
+        }
 
-        enableDragElement(objectMapWindow, "objectMapWindow");
+        // オブジェクトツリーのベースウィンドウ
+        var objectTreeWindow = createObjectTreeWindow();
+        var objectTree = document.createElement("div");
+        objectTreeWindow.appendChild(objectTree);
 
-        // 全体のマップを作成
-        function createObjectMap() {
+        // 全体のツリーを作成
+        function createObjectTree() {
 
-            // 変更がなければ更新しない
-            if (!modified) {
-                return;
-            }
+            updateStatus();
 
-            // マップ表示を削除
-            while (objectMapWindow.firstChild) {
-                objectMapWindow.removeChild(objectMapWindow.firstChild);
+            // ツリーを一旦消す
+            while (objectTree.firstChild) {
+                objectTree.removeChild(objectTree.firstChild);
             }
 
             // 親作成
             function createObject(parentElement, displayObject) {
                 var group = document.createElement("div");
+                group.className = "group";
                 var s = group.style;
-                s.outline = "";
-                s.margin = "5px 15px";  // インデント付ける
-
+                if (displayObject === selected) {
+                    s.outline = "1px solid #f00";
+                } else {
+                    s.outline = "";
+                }
                 function openChildren() {
                     if (displayObject.opened) {
                         if (displayObject instanceof zz.DisplayObjectContainer) {
@@ -373,16 +472,17 @@ zz.debug = new function() {
                     var e = document.createElement("input");
                     e.type = "button";
                     var s = e.style;
-                    s.margin = "3px";
                     e.onmousedown = function(event) {
-                        modified = true;
                         setSelectLine(displayObject);
                         displayObject.opened ^= true;
                         openChildren();
+                        stage.dispatchEvent(DebugEvent.UPDATE_TREE);
                     };
-                    var name = Object.prototype.toString.apply(displayObject);
-                    if (displayObject.name) {
-                        name += " [" + displayObject.name + "]";
+                    var name = "[" + (displayObject.name || "-") + "]";
+                    if (displayObject instanceof zz.DisplayObjectContainer) {
+                        name += " (" + displayObject.numChildren + ")";
+                    } else {
+                        name += " (-)";
                     }
                     e.value = name;
                     return e;
@@ -393,121 +493,244 @@ zz.debug = new function() {
             }
 
             // ベースのelementにstageを追加
-            createObject(objectMapWindow, this);
-
-            modified = false;
+            createObject(objectTree, this);
         }
 
-        this.addEventListener(zz.Event.ENTER_FRAME, createObjectMap);
-        this.addEventListener(zz.Event.ENTER_FRAME, function() {
+        this.addEventListener(DebugEvent.UPDATE_TREE, createObjectTree);
+
+        function updateStatus() {
             if (selected) {
-                for (var key in properties) {
-                    var property = properties[key];
+                for (var i = 0; i < properties.length; i++) {
+                    var property = properties[i];
+                    var propertyName = property.property;
                     var input = property.input;
-                    if (document.activeElement != input &&
-                        input.value !== selected[key]) {
-                        if (input.type == "select-one") {
-                            for (var i = 0; i < input.options.length; i++) {
-                                var pos = selected[key] == RP.CENTER ? RP.CENTER | RP.MIDDLE : selected[key];
-                                if (input.options[i].value == pos) {
-                                    input.options[i].selected = true;
+                    // MovieClipだけフレーム数表示
+                    if (propertyName == "timeLine") {
+                        if (selected instanceof zz.MovieClip) {
+                            property.element.style.display = "block";
+                        } else {
+                            property.element.style.display = "none";
+                            continue;
+                        }
+                    }
+                    if (document.activeElement != input && input.value !== selected[propertyName]) {
+                        switch (property.type) {
+                        case inputNumber:
+                            input.value = selected[propertyName] * property.ratio;
+                            break;
+                        case inputCheckbox:
+                            input.checked = selected[propertyName];
+                            break;
+                        case referencePointList:
+                            for (var j = 0; j < input.options.length; j++) {
+                                var pos = selected[propertyName] == RP.CENTER ? RP.CENTER | RP.MIDDLE : selected[propertyName];
+                                if (input.options[j].value == pos) {
+                                    input.options[j].selected = true;
                                 }
                             }
-                        } else if (input.type == "checkbox") {
-                            input.checked = selected[key];
-                        } else {
-                            input.value = selected[key] * property.ratio;
+                            break;
+                        case inputRange:
+                            input.min = 1;
+                            var max = selected.totalFrames;
+                            input.max = max;
+                            var title = property.title;
+                            title.innerHTML = ["MC(",
+                                               selected.currentFrame,
+                                               "/",
+                                               max,
+                                               ")"].join("");
+                            input.value = selected.currentFrame;
+                            break;
+                        default:
+                            break;
                         }
                     }
                 }
             }
-        });
+        }
+        this.addEventListener(zz.Event.ENTER_FRAME, updateStatus);
 
-        // frameRateプロパティ書き換え
-        var expectFrameRate = window.localStorage.getItem("debugFrameRate") || this.frameRate;
-        var actuallyFrameRate = expectFrameRate;
-        Object.defineProperty(this, "frameRate", {
-            get: function() {
-                return actuallyFrameRate;
-            },
-            set: function(rate) {
-                expectFrameRate = rate;
-            }
-        });
-
-        var stageWindow = document.createElement("div");
+        // ステージウィンドウ
         (function() {
-            var s = stageWindow.style;
-            s.marginTop = "10px";
-
-            var title = document.createElement("div");
-            title.innerHTML = "FPS:";
-            statusWindow.appendChild(stageWindow);
-            var input = document.createElement("input");
-            input.type = "range";
-            input.max = 60;
-            input.min = 1;
-            input.value = actuallyFrameRate;
-            input.addEventListener("mousedown", function(event) {
-                event.stopPropagation();
-            });
-
-            function setFPS() {
-                var n = parseInt(input.value, 10);
-                if (!isNaN(n)) {
-                    actuallyFrameRate = n;
-                    window.localStorage.setItem("debugFrameRate", n);
+            // frameRateプロパティ書き換え
+            var expectFrameRate = loadData("debugFrameRate") || this.frameRate;
+            var actuallyFrameRate = expectFrameRate;
+            Object.defineProperty(this, "frameRate", {
+                get: function() {
+                    return actuallyFrameRate;
+                },
+                set: function(rate) {
+                    expectFrameRate = rate;
                 }
-            }
-
-            input.addEventListener("change", setFPS);
-            input.addEventListener("input", setFPS);
-            title.appendChild(input);
-            stageWindow.appendChild(title);
-            this.addEventListener(zz.Event.ENTER_FRAME, function() {
-                title.firstChild.nodeValue = ["FPS 本来:",
-                                              expectFrameRate,
-                                              "/設定値:",
-                                              actuallyFrameRate
-                                             ].join("");
             });
+
+            // 表示ウィンドウ
+            var stageWindow = createWindow("stageProperty", "Stage設定", {
+                position: "absolute",
+                top: "0px",
+                left: "0px"
+            });
+
+            document.body.appendChild(stageWindow);
+
+            // fps
+            (function() {
+                var title = document.createElement("div");
+                title.innerHTML = "FPS:";
+                var input = document.createElement("input");
+                input.type = "range";
+                input.max = 60;
+                input.min = 1;
+                input.value = actuallyFrameRate;
+                input.addEventListener("mousedown", function(event) {
+                    event.stopPropagation();
+                });
+
+                function setFPS() {
+                    var n = parseInt(input.value, 10);
+                    if (!isNaN(n)) {
+                        actuallyFrameRate = n;
+                        saveData("debugFrameRate", n);
+                    }
+                }
+
+                input.addEventListener("change", setFPS);
+                input.addEventListener("input", setFPS);
+                title.appendChild(input);
+                stageWindow.appendChild(title);
+                this.addEventListener(zz.Event.ENTER_FRAME, function() {
+                    title.firstChild.nodeValue = ["FPS 本来:",
+                                                  expectFrameRate,
+                                                  "/設定値:",
+                                                  actuallyFrameRate
+                                                 ].join("");
+                });
+            }).call(this);
+
+            // 再生、一時停止
+            (function() {
+                var line = document.createElement("div");
+                var title = document.createElement("span");
+                title.innerHTML = this.running ? "再生中" : "停止中";
+                function createButton(title) {
+                    var button = document.createElement("input");
+                    button.type = "button";
+                    button.value = title;
+                    button.style.margin = "5px 5px";
+                    button.style.width = "100px";
+                    return button;
+                }
+                var suspend = createButton("一時停止");
+                suspend.addEventListener("click", function(event) {
+                    if (stage.running) {
+                        title.innerHTML = "停止中";
+                        suspend.value = "再生";
+                        stage.pause();
+                    } else {
+                        title.innerHTML = "再生中";
+                        suspend.value = "一時停止";
+                        stage.start();
+                    }
+                });
+                this.timeLineElement = document.createElement("span");
+                this.timeLineElement.innerHTML = "現在:" + this.frameCount + "フレーム目";
+                line.appendChild(suspend);
+                line.appendChild(this.timeLineElement);
+                line.appendChild(title);
+                stageWindow.appendChild(line);
+            }).call(this);
+
+            // ステージ色
+            (function() {
+                var line = document.createElement("div");
+                var title = document.createElement("span");
+                title.innerHTML = "ステージ色:";
+                var select = document.createElement("select");
+                var colors = [
+                    ["透明", ""],
+                    ["半透明(黒10%)", "rgba(0, 0, 0, 0.1)"],
+                    ["半透明(黒25%)", "rgba(0, 0, 0, 0.25)"],
+                    ["黒", "#000"],
+                    ["白", "#fff"],
+                    ["赤", "#f00"],
+                    ["緑", "#0f0"],
+                    ["青", "#00f"]
+                ];
+                var defaultColorIdx = parseInt(loadData("stageColor") || 0, 10);
+                for (var i = 0; i < colors.length; i++) {
+                    var c = colors[i];
+                    select.innerHTML += ['<option value="',
+                                         c[1],
+                                         '">',
+                                         c[0],
+                                         "</option>"].join("");
+                }
+                select.options[defaultColorIdx].selected = true;
+                this.backgroundColor = select.options[defaultColorIdx].value;
+                var self = this;
+                select.addEventListener("mouseup", function(event) {
+                    var color = select.options[select.selectedIndex].value;
+                    self.backgroundColor = color;
+                    saveData("stageColor", select.selectedIndex);
+                });
+                line.appendChild(title);
+                line.appendChild(select);
+                stageWindow.appendChild(line);
+            }).call(this);
         }).call(this);
     }
+    debugStage.prototype = zz.createClass(debugStage, {
+        onEnterFrame: function() {
+            if (this.frameCount === undefined) {
+                this.frameCount = 0;
+            }
+            if (this.timeLineElement) {
+                this.timeLineElement.innerHTML = " 現在:" + this.frameCount + "フレーム目";
+            }
+            ++this.frameCount;
+        }
+    });
 
     /**
      * DisplayObjectContainer書き換え
      */
-    var debugDisplayObjectContainerMethods = {
-        addChild: function() {
-            modified = true;
-        },
+    function debugDisplayObjectContainer() {
+    }
+    debugDisplayObjectContainer.prototype = zz.createClass(debugDisplayObjectContainer, {
         addChildAt: function() {
-            modified = true;
+            this.root.dispatchEvent(DebugEvent.UPDATE_TREE);
         },
         removeChild: function() {
-            modified = true;
+            this.root.dispatchEvent(DebugEvent.UPDATE_TREE);
         },
         setChildIndex: function() {
-            modified = true;
+            this.root.dispatchEvent(DebugEvent.UPDATE_TREE);
         },
         swapChildren: function() {
-            modified = true;
+            this.root.dispatchEvent(DebugEvent.UPDATE_TREE);
         }
-    };
+    });
 
-    function overwriteClass(cls, initialize, methods) {
+    /**
+     * クラスを上書きする。継承ではなくて上書き。
+     * @param {Object} cls 上書き対象のクラス
+     * @param {Object} extension 拡張するクラス
+     * 
+     */
+    function overwriteClass(cls, extension) {
         function overwrite() {
             cls.apply(this, arguments);
-            if (typeof initialize == "function") {
-                initialize.apply(this, arguments);
+            if (typeof extension != "function") {
+                throw new Error(extension + " is not function.");
             }
+            extension.apply(this, arguments);
         }
 
         overwrite.prototype = cls.prototype;
 
         function overwriteMethod(name) {
-            var method = methods[name];
-            var originalFunc = overwrite.prototype[name];
+            var method = extension.prototype[name];
+            var originalFunc = cls.prototype[name];
             function newMethod() {
                 if (typeof originalFunc == "function") {
                     originalFunc.apply(this, arguments);
@@ -519,17 +742,15 @@ zz.debug = new function() {
             overwrite.prototype[name] = newMethod;
         }
 
-        if (typeof methods == "object") {
-            for (var name in methods) {
-                overwriteMethod(name);
-            }
+        for (var methodName in extension.prototype) {
+            overwriteMethod(methodName);
         }
         return overwrite;
     }
 
     return zz.modularize(null, {
         DisplayObject: overwriteClass(zz.DisplayObject, debugDisplayObject),
-        DisplayObjectContainer: overwriteClass(zz.DisplayObjectContainer, null, debugDisplayObjectContainerMethods),
+        DisplayObjectContainer: overwriteClass(zz.DisplayObjectContainer, debugDisplayObjectContainer),
         Stage: overwriteClass(zz.Stage, debugStage)
     });
 };

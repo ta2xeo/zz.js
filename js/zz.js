@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.1.9
+ * @version       0.2.0
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -550,20 +550,20 @@ var zz = new function() {
                     this._reference = point;
                     if ((point & ReferencePoint.CENTER) == ReferencePoint.CENTER) {
                         this.referenceX = 50;
-                        this.style.left = -(this._width / 2 << 0) + "px";
+                        this.style.left = -(this.width / 2 << 0) + "px";
                     } else if ((point & ReferencePoint.RIGHT) == ReferencePoint.RIGHT) {
                         this.referenceX = 100;
-                        this.style.left = -this._width + "px";
+                        this.style.left = -this.width + "px";
                     } else {
                         this.referenceX = 0;
                         this.style.left = "0px";
                     }
                     if ((point & ReferencePoint.MIDDLE) == ReferencePoint.MIDDLE || point == ReferencePoint.CENTER) {
                         this.referenceY = 50;
-                        this.style.top = -(this._height / 2 << 0) + "px";
+                        this.style.top = -(this.height / 2 << 0) + "px";
                     } else if ((point & ReferencePoint.BOTTOM) == ReferencePoint.BOTTOM) {
                         this.referenceY = 100;
-                        this.style.top = -this._height + "px";
+                        this.style.top = -this.height + "px";
                     } else {
                         this.referenceY = 0;
                         this.style.top = "0px";
@@ -597,16 +597,7 @@ var zz = new function() {
              * @param {DisplayObject} child
              */
             addChild: function(child) {
-                child.parent = this;
-                this.element.appendChild(child.element);
-                this.children.push(child);
-                DisplayObject.prototype.transform.call(child);
-                if (child.name) {
-                    if (child.name in this.nameMap) {
-                        throw new Error("duplicate key error. " + child.name + " is already defined.");
-                    }
-                    this.nameMap[child.name] = child;
-                }
+                this.addChildAt(child, this.numChildren);
             },
             /**
              * @param {DisplayObject} child
@@ -620,7 +611,7 @@ var zz = new function() {
                     this.element.appendChild(child.element);
                 }
                 this.children.splice(index, 0, child);
-                DisplayObject.prototype.transform.call(child);
+                _zz.DisplayObject.prototype.transform.call(child);
                 if (child.name) {
                     if (child.name in this.nameMap) {
                         throw new Error("duplicate key error. " + child.name + " is already defined.");
@@ -718,7 +709,7 @@ var zz = new function() {
                 }
             },
             render: function() {
-                DisplayObject.prototype.render.call(this);
+                _zz.DisplayObject.prototype.render.call(this);
                 for (var i = 0, len = this.numChildren; i < len; i++) {
                     if (this.children[i]) {
                         this.children[i].render();
@@ -726,7 +717,7 @@ var zz = new function() {
                 }
             },
             onEnterFrame: function() {
-                DisplayObject.prototype.onEnterFrame.apply(this);
+                _zz.DisplayObject.prototype.onEnterFrame.apply(this);
                 for (var i = 0, len = this.numChildren; i < len; i++) {
                     if (this.children[i]) {
                         this.children[i].onEnterFrame();
@@ -788,7 +779,7 @@ var zz = new function() {
         _Stage.prototype = createClass(DisplayObjectContainer, {
             onEnterFrame: function() {
                 var prev = performance.now();
-                DisplayObjectContainer.prototype.onEnterFrame.call(this);
+                _zz.DisplayObjectContainer.prototype.onEnterFrame.call(this);
                 var elapsed = performance.now() - prev;
                 var wait = Math.max(1, 1000 / this.frameRate - elapsed << 0);
                 var self = this;
@@ -1118,7 +1109,7 @@ var zz = new function() {
                         this._canvasDirty = false;
                     }
                 }
-                DisplayObjectContainer.prototype.render.call(this);
+                _zz.DisplayObjectContainer.prototype.render.call(this);
             },
             getImageData: function() {
                 if (this._originalImageData === null) {
@@ -1159,17 +1150,25 @@ var zz = new function() {
         var _MovieClip = function(fileName, x, y) {
             _zz.Sprite.apply(this, arguments);
             this.currentFrame = 1;
-            this.frames = new Array();
+            this.frames = [undefined];
             this.playing = true;
             this.currentLabel = "";
             this._mcDirty = true;
         };
         _MovieClip.prototype = createClass(Sprite, {
             /**
+             * フレームの総数
+             */
+            totalFrames: {
+                get: function() {
+                    return this.frames.length - 1;
+                }
+            },
+            /**
              * @param {Object} data
              */
             setAnimation: function(data) {
-                this.frames = [];
+                this.frames = [undefined];
                 var tweenIndexes = new Array();
                 for (var time in data) {
                     if (!this.frames[time]) {
@@ -1249,49 +1248,54 @@ var zz = new function() {
             gotoAndPlay: function(frame) {
                 this.playing = true;
                 this.setFrame(frame);
+                this.applyFrame(this.currentFrame);
+                this.transform();
             },
             gotoAndStop: function(frame) {
                 this.playing = false;
                 this.setFrame(frame);
+                this.applyFrame(this.currentFrame);
+                this.transform();
             },
-            onEnterFrame: function() {
-                var frame = this.frames[this.currentFrame];
-                if (this._mcDirty) {
-                    if (frame != undefined) {
-                        var event = null;
-                        for (var key in frame) {
-                            switch (key) {
-                            case "stop":
-                                this.playing = false;
-                                break;
-                            case "gotoAndPlay":
-                                this.gotoAndPlay(frame[key]);
-                                break;
-                            case "gotoAndStop":
-                                this.gotoAndStop(frame[key]);
-                                break;
-                            case "label":
-                                this.currentLabel = frame[key];
-                                break;
-                            case "event":
-                                event = frame[key];
-                                break;
-                            default:
-                                this[key] = frame[key];
-                                break;
-                            }
+            applyFrame: function(frame) {
+                var property = this.frames[frame];
+                if (property != undefined && this._mcDirty) {
+                    var event = null;
+                    for (var key in property) {
+                        switch (key) {
+                        case "stop":
+                            this.playing = false;
+                            break;
+                        case "gotoAndPlay":
+                            this.gotoAndPlay(property[key]);
+                            break;
+                        case "gotoAndStop":
+                            this.gotoAndStop(property[key]);
+                            break;
+                        case "label":
+                            this.currentLabel = property[key];
+                            break;
+                        case "event":
+                            event = property[key];
+                            break;
+                        default:
+                            this[key] = property[key];
+                            break;
                         }
-                        if (event) {
-                            if (typeof event == "function") {
-                                event.call(this);
-                            } else {
-                                this.dispatchEvent(event);
-                            }
+                    }
+                    if (event) {
+                        if (typeof event == "function") {
+                            event.call(this);
+                        } else {
+                            this.dispatchEvent(event);
                         }
                     }
                     this._mcDirty = false;
                 }
-                DisplayObjectContainer.prototype.onEnterFrame.call(this);
+            },
+            onEnterFrame: function() {
+                this.applyFrame(this.currentFrame);
+                _zz.DisplayObjectContainer.prototype.onEnterFrame.call(this);
                 if (this.playing) {
                     ++this.currentFrame;
                     if (this.currentFrame >= this.frames.length) {
@@ -1331,6 +1335,10 @@ var zz = new function() {
             this.visible = true;
         };
         _TextField.prototype = createClass(DisplayObject, {
+            transform: function() {
+                this.setSize(this.width, this.height);
+                _zz.DisplayObject.prototype.transform.call(this);
+            },
             defaultTextFormat: {
                 get: function() {
                     return this._defaultTextFormat;

@@ -1,0 +1,48 @@
+@charset "utf-8";
+
+div.window {
+    display: inline-block;
+    border-radius: 8px;
+    border: 2px solid #aaaaaa;
+    background-color: #dddddd;
+    padding-bottom: 8px;
+    margin: 0;
+    text-shadow: -1px -1px #fff, 1px -1px #fff, -1px 1px #fff, 1px 1px #fff;
+}
+
+div.window div {
+    padding: 0px 8px;
+}
+
+div.title {
+    margin: 0px 0px 8px 0px;
+    padding: 3px 8px;
+    background-color: #cccccc;
+    border-radius: 8px 8px 0px 0px;
+    border-bottom: 2px solid #aaaaaa;
+    text-align: center;
+}
+
+div.title:hover {
+    background-color: #dddddd;
+    color: #999999;
+    cursor: move;
+}
+
+div#property {
+    text-align: right;
+}
+
+div#objectTree {
+    background-color: rgba(200, 200, 200, 0.7);
+}
+
+/* インデント目的 */
+div#objectTree .group {
+    margin: 2px 5px;
+    padding: 2px 10px;
+}
+
+.debug {
+    outline: 1px solid red;
+}
