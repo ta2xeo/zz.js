@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.3
+ * @version       0.0.4
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  * 読み込むだけで機能が有効になります。
  * 一緒にcss/debug.css, js/module/zz.keyboard.jsも読み込んで下さい。
@@ -386,7 +386,6 @@ zz.debug = new function() {
      */
     function debugStage() {
         var stage = this;
-        this.style.overflow = "";
 
         // キーボードの↑↓←→でオブジェクトを移動できるように。
         this.addEventListener(KeyboardEvent.KEY_DOWN, function(e) {
@@ -675,6 +674,25 @@ zz.debug = new function() {
                 });
                 line.appendChild(title);
                 line.appendChild(select);
+                stageWindow.appendChild(line);
+            }).call(this);
+
+            // 枠外表示
+            (function() {
+                var line = document.createElement("div");
+                var title = document.createElement("span");
+                title.innerHTML = "ステージ外表示";
+
+                var input = document.createElement("input");
+                input.type = "checkbox";
+                input.checked = loadData("stageOverflow");
+                stage.style.overflow = input.checked ? "" : "hidden";
+                input.addEventListener("click", function(event) {
+                    stage.style.overflow = input.checked ? "" : "hidden";
+                    saveData("stageOverflow", input.checked || "");
+                });
+                line.appendChild(title);
+                line.appendChild(input);
                 stageWindow.appendChild(line);
             }).call(this);
         }).call(this);
