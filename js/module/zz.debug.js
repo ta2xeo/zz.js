@@ -470,6 +470,7 @@ zz.debug = new function() {
                 if (match) {
                     selected.dispatchEvent(DebugEvent.REDRAW);
                     selected.transform();
+                    updateProperty();
                     return true;
                 }
             }
