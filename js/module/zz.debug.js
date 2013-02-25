@@ -430,7 +430,7 @@ zz.debug = new function() {
                 }
                 if (tmp) {
                     this.style.outline = "";
-                    setTimeout(outline, 10);
+                    setTimeout(outline, 100);
                 }
             });
         }
@@ -469,6 +469,7 @@ zz.debug = new function() {
                 }
                 if (match) {
                     selected.dispatchEvent(DebugEvent.REDRAW);
+                    selected.transform();
                     return true;
                 }
             }
