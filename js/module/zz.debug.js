@@ -57,6 +57,60 @@ zz.debug = new function() {
     }
 
     /**
+     * プロパティの更新
+     */
+    function updateProperty() {
+        if (selected) {
+            for (var i = 0; i < properties.length; i++) {
+                var property = properties[i];
+                var propertyName = property.property;
+                var input = property.input;
+                // MovieClipだけフレーム数表示
+                if (propertyName == "timeLine") {
+                    if (selected instanceof zz.MovieClip) {
+                        property.element.style.display = "block";
+                    } else {
+                        property.element.style.display = "none";
+                        continue;
+                    }
+                }
+                if (document.activeElement != input && input.value !== selected[propertyName]) {
+                    switch (property.type) {
+                    case inputNumber:
+                        input.value = selected[propertyName] * property.ratio;
+                        break;
+                    case inputCheckbox:
+                        input.checked = selected[propertyName];
+                        break;
+                    case referencePointList:
+                        for (var j = 0; j < input.options.length; j++) {
+                            var pos = selected[propertyName] == RP.CENTER ? RP.CENTER | RP.MIDDLE : selected[propertyName];
+                            if (input.options[j].value == pos) {
+                                input.options[j].selected = true;
+                            }
+                        }
+                        break;
+                    case inputRange:
+                        input.min = 1;
+                        var max = selected.totalFrames;
+                        input.max = max;
+                        var title = property.title;
+                        title.innerHTML = ["MC(",
+                                           selected.currentFrame,
+                                           "/",
+                                           max,
+                                           ")"].join("");
+                        input.value = selected.currentFrame;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * 移動可能なウィンドウを作成する
      * @param {String} id 識別用IDでユニークでなければならない
      * @param {String} title ウィンドウのタイトルバーに表示される文字
@@ -289,6 +343,7 @@ zz.debug = new function() {
                 } else {
                     selected.gotoAndStop(v);
                 }
+                updateProperty();
             }
             event.preventDefault();
         }
@@ -439,7 +494,7 @@ zz.debug = new function() {
         // 全体のツリーを作成
         function createObjectTree() {
 
-            updateStatus();
+            updateProperty();
 
             // ツリーを一旦消す
             while (objectTree.firstChild) {
@@ -496,58 +551,7 @@ zz.debug = new function() {
         }
 
         this.addEventListener(DebugEvent.UPDATE_TREE, createObjectTree);
-
-        function updateStatus() {
-            if (selected) {
-                for (var i = 0; i < properties.length; i++) {
-                    var property = properties[i];
-                    var propertyName = property.property;
-                    var input = property.input;
-                    // MovieClipだけフレーム数表示
-                    if (propertyName == "timeLine") {
-                        if (selected instanceof zz.MovieClip) {
-                            property.element.style.display = "block";
-                        } else {
-                            property.element.style.display = "none";
-                            continue;
-                        }
-                    }
-                    if (document.activeElement != input && input.value !== selected[propertyName]) {
-                        switch (property.type) {
-                        case inputNumber:
-                            input.value = selected[propertyName] * property.ratio;
-                            break;
-                        case inputCheckbox:
-                            input.checked = selected[propertyName];
-                            break;
-                        case referencePointList:
-                            for (var j = 0; j < input.options.length; j++) {
-                                var pos = selected[propertyName] == RP.CENTER ? RP.CENTER | RP.MIDDLE : selected[propertyName];
-                                if (input.options[j].value == pos) {
-                                    input.options[j].selected = true;
-                                }
-                            }
-                            break;
-                        case inputRange:
-                            input.min = 1;
-                            var max = selected.totalFrames;
-                            input.max = max;
-                            var title = property.title;
-                            title.innerHTML = ["MC(",
-                                               selected.currentFrame,
-                                               "/",
-                                               max,
-                                               ")"].join("");
-                            input.value = selected.currentFrame;
-                            break;
-                        default:
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        this.addEventListener(zz.Event.ENTER_FRAME, updateStatus);
+        this.addEventListener(zz.Event.ENTER_FRAME, updateProperty);
 
         // ステージウィンドウ
         (function() {
