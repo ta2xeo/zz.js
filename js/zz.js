@@ -1233,11 +1233,10 @@ var zz = new function() {
             setFrame: function(frame) {
                 if (typeof(frame) == "string") {
                     for (var i in this.frames) {
-                        if (this.frames[i]["label"]) {
-                            if (frame == this.frames[i]["label"]) {
-                                this.currentFrame = i;
-                                break;
-                            }
+                        var label = this.frames[i] && this.frames[i]["label"];
+                        if (label == frame) {
+                            this.currentFrame = i;
+                            break;
                         }
                     }
                 } else {
