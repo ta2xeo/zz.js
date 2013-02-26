@@ -312,6 +312,7 @@ var zz = new function() {
             this.style[PREFIX + "TapHighlightColor"] = "rgba(0,0,0,0)";
             this.style[PREFIX + "TouchCallout"] = "none";
             this.style[PREFIX + "UserSelect"] = "none";
+            this.style.textAlign = "left";
             this.name = "";
             this.parent = null;
             this.x = 0;
