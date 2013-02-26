@@ -1,6 +1,6 @@
 @charset "utf-8";
 
-div.window {
+div.zz_debug_window {
     display: inline-block;
     border-radius: 8px;
     border: 2px solid #aaaaaa;
@@ -10,11 +10,11 @@ div.window {
     text-shadow: -1px -1px #fff, 1px -1px #fff, -1px 1px #fff, 1px 1px #fff;
 }
 
-div.window div {
+div.zz_debug_window div {
     padding: 0px 8px;
 }
 
-div.title {
+div.zz_debug_title {
     margin: 0px 0px 8px 0px;
     padding: 3px 8px;
     background-color: #cccccc;
@@ -23,26 +23,22 @@ div.title {
     text-align: center;
 }
 
-div.title:hover {
+div.zz_debug_title:hover {
     background-color: #dddddd;
     color: #999999;
     cursor: move;
 }
 
-div#property {
+div#zz_debug_property {
     text-align: right;
 }
 
-div#objectTree {
+div#zz_debug_objectTree {
     background-color: rgba(200, 200, 200, 0.7);
 }
 
-/* ¥¤¥ó¥Ç¥ó¥ÈÌÜÅª */
-div#objectTree .group {
+/* ã‚¤ãƒ³ãƒ‡ãƒ³ãƒˆç›®çš„ */
+div#zz_debug_objectTree .group {
     margin: 2px 5px;
     padding: 2px 10px;
-}
-
-.debug {
-    outline: 1px solid red;
 }

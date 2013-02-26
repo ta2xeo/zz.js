@@ -119,7 +119,7 @@ zz.debug = new function() {
     function createWindow(id, title, defaults) {
         var windowElement = document.createElement("div");
         windowElement.id = id;
-        windowElement.className = "window";
+        windowElement.className = "zz_debug_window";
         if (defaults) {
             for (var property in defaults) {
                 var val = defaults[property];
@@ -128,7 +128,7 @@ zz.debug = new function() {
         }
 
         var titleElement = document.createElement("div");
-        titleElement.className = "title";
+        titleElement.className = "zz_debug_title";
         titleElement.innerHTML = title;
         windowElement.appendChild(titleElement);
 
@@ -191,7 +191,7 @@ zz.debug = new function() {
      * プロパティ確認用ウィンドウ作成
      */
     function createPropertyWindow() {
-        var window = createWindow("property", "プロパティ", {
+        var window = createWindow("zz_debug_property", "プロパティ", {
             position: "absolute",
             right: "0px",
             bottom: "0px"
@@ -479,7 +479,7 @@ zz.debug = new function() {
 
         // DisplayObjectのツリー表示用div要素
         function createObjectTreeWindow() {
-            var window = createWindow("objectTree", "DisplayObject Tree", {
+            var window = createWindow("zz_debug_objectTree", "DisplayObject Tree", {
                 position: "absolute",
                 left: "0px",
                 bottom: "0px"
@@ -506,7 +506,7 @@ zz.debug = new function() {
             // 親作成
             function createObject(parentElement, displayObject) {
                 var group = document.createElement("div");
-                group.className = "group";
+                group.className = "zz_debug_group";
                 var s = group.style;
                 if (displayObject === selected) {
                     s.outline = "1px solid #f00";
@@ -570,7 +570,7 @@ zz.debug = new function() {
             });
 
             // 表示ウィンドウ
-            var stageWindow = createWindow("stageProperty", "Stage設定", {
+            var stageWindow = createWindow("zz_debug_stageProperty", "Stage設定", {
                 position: "absolute",
                 top: "0px",
                 left: "0px"
