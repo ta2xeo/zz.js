@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.2.0
+ * @version       0.2.1
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -1327,18 +1327,31 @@ var zz = new function() {
      * @extends DisplayObject
      */
     var TextField = new function() {
-        var _TextField = function() {
+        /**
+         * create element to get text size.
+         */
+        var ruler;
+        window.addEventListener("load", function(e) {
+            ruler = document.createElement("span");
+            ruler.style.visibility = "hidden";
+            ruler.style.position = "absolute";
+            ruler.style.whiteSpace = "nowrap";
+            ruler.style.left = "0px";
+            ruler.style.top = "-50px";
+            document.body.appendChild(ruler);
+        });
+
+        /**
+         * @constructor
+         */
+        var _TextField = function(text) {
             _zz.DisplayObject.apply(this);
-            this.text = "";
+            this.text = text || "";
             this.style.visibility = "hidden";
             this.style.display = "block";
             this.visible = true;
         };
         _TextField.prototype = createClass(DisplayObject, {
-            transform: function() {
-                this.setSize(this.width, this.height);
-                _zz.DisplayObject.prototype.transform.call(this);
-            },
             defaultTextFormat: {
                 get: function() {
                     return this._defaultTextFormat;
@@ -1357,8 +1370,13 @@ var zz = new function() {
                     return this.element.innerHTML;
                 },
                 set: function(text) {
-                    this.element.innerHTML = text;
-                    this.setSize(this.width, this.height);
+                    var s = ruler.style;
+                    s.fontFamily = this.style.fontFamily;
+                    s.fontWeight = this.style.fontWeight;
+                    s.fontStyle = this.style.fontStyle;
+                    s.fontSize = this.style.fontSize;
+                    this.element.innerHTML = ruler.innerHTML = text;
+                    this.setSize(ruler.offsetWidth, ruler.offsetHeight);
                 }
             },
             textColor: {
@@ -1385,24 +1403,6 @@ var zz = new function() {
                         self.removeEventListener(Event.ENTER_FRAME, display);
                     }
                     this.addEventListener(Event.ENTER_FRAME, display);
-                }
-            },
-            width: {
-                get: function() {
-                    return this.element.clientWidth;
-                },
-                set: function(width) {
-                    this._width = width;
-                    this.referencePoint = this._reference;
-                }
-            },
-            height: {
-                get: function() {
-                    return this.element.clientHeight;
-                },
-                set: function(height) {
-                    this._height = height;
-                    this.referencePoint = this._reference;
                 }
             }
         });
