@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.2.1
+ * @version       0.2.2
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -605,6 +605,9 @@ var zz = new function() {
              * @param {Int} index
              */
             addChildAt: function(child, index) {
+                if (child instanceof _zz.DisplayObject === false) {
+                    throw new Error(Object.prototype.toString(child) + " is not DisplayObject.");
+                }
                 child.parent = this;
                 if (index < this.numChildren) {
                     this.element.insertBefore(child.element, this.children[index].element);
@@ -863,26 +866,14 @@ var zz = new function() {
         /**
          * @constructor
          */
-        var _Sprite = function(fileName, x, y) {
+        var _Sprite = function(src, x, y) {
             this.canvas = document.createElement("canvas");
             _zz.DisplayObjectContainer.apply(this);
             this.canvas.style.position = "absolute";
             this.context = this.canvas.getContext("2d");
             this.element.appendChild(this.canvas);
-            var self = this;
-            if (fileName) {
-                this.img = loadImage(fileName, function() {
-                    self.width = self.img.width;
-                    self.height = self.img.height;
-                    self.canvas.width = self._width;
-                    self.canvas.height = self._height;
-                    self.tw = self._clearWidth = self._width;
-                    self.th = self._clearHeight = self._height;
-                    self.referencePoint = self._reference;
-                    self.trimming(self.tx, self.ty, self.tw, self.th);
-                    self.loaded = true;
-                    self.dispatchEvent(new Event(Event.COMPLETE));
-                });
+            if (src) {
+                this.loadImage(src);
             } else {
                 this.width = 0;
                 this.height = 0;
@@ -1005,6 +996,17 @@ var zz = new function() {
                     th = this.img.height;
                 }
                 this.th = th;
+            },
+            loadImage: function(src) {
+                var self = this;
+                this.img = _zz.loadImage(src, function(event) {
+                    self.tw = self._clearWidth = self.canvas.width = self.width = self.img.width;
+                    self.th = self._clearHeight = self.canvas.height = self.height = self.img.height;
+                    self.referencePoint = self._reference;
+                    self.trimming(self.tx, self.ty, self.tw, self.th);
+                    self.loaded = true;
+                    self.dispatchEvent(new Event(Event.COMPLETE));
+                });
             },
             /**
              * @param {Sprite} self
@@ -1148,7 +1150,7 @@ var zz = new function() {
         /**
          * @constructor
          */
-        var _MovieClip = function(fileName, x, y) {
+        var _MovieClip = function(src, x, y) {
             _zz.Sprite.apply(this, arguments);
             this.currentFrame = 1;
             this.frames = [undefined];
@@ -1409,51 +1411,6 @@ var zz = new function() {
         return _TextField;
     };
 
-    function loadImage(src, callback) {
-        var img = new Image();
-        img.src = src;
-        var retry = DEFAULT_RETRY_COUNT;
-
-        img.onerror = function() {
-            if (retry--) {
-                img.src = src;
-            } else {
-                throw new Error('Could not load image files: ' + src);
-            }
-        };
-
-        img.onload = function() {
-            if (typeof callback == "function") {
-                callback();
-            }
-        };
-        return img;
-    }
-
-    function loadJS(src, callback) {
-        var head = document.getElementsByTagName("head")[0];
-        var retry = DEFAULT_RETRY_COUNT;
-
-        (function load() {
-            var script = document.createElement("script");
-            script.type = "text/javascript";
-            script.src = src;
-            script.onerror = function() {
-                if (retry--) {
-                    load();
-                } else {
-                    throw new Error('Could not load script files: ' + src);
-                }
-            };
-            script.onload = function() {
-                if (typeof callback == "function") {
-                    callback();
-                }
-            };
-            head.appendChild(script);
-        })();
-    }
-
     var registration = {
         ENV: ENV,
         Event: Event,
@@ -1495,9 +1452,54 @@ var zz = new function() {
                     }
                 }
             }
+            var resources = new Array();
             for (var i = 0; i < assetsCount; ++i) {
-                _zz.load(assets[i], checkLoad);
+                resources.push(_zz.load(assets[i], checkLoad));
             }
+            return resources;
+        },
+        loadImage: function(src, callback) {
+            var img = new Image();
+            img.src = src;
+            var retry = DEFAULT_RETRY_COUNT;
+
+            img.onerror = function(event) {
+                if (retry--) {
+                    img.src = src;
+                } else {
+                    throw new Error('Could not load image files: ' + src);
+                }
+            };
+
+            img.onload = function(event) {
+                if (typeof callback == "function") {
+                    callback(event);
+                }
+            };
+            return img;
+        },
+        loadJS: function(src, callback) {
+            var head = document.getElementsByTagName("head")[0];
+            var retry = DEFAULT_RETRY_COUNT;
+
+            (function load() {
+                var script = document.createElement("script");
+                script.type = "text/javascript";
+                script.src = src;
+                script.onerror = function() {
+                    if (retry--) {
+                        load();
+                    } else {
+                        throw new Error('Could not load script files: ' + src);
+                    }
+                };
+                script.onload = function() {
+                    if (typeof callback == "function") {
+                        callback();
+                    }
+                };
+                head.appendChild(script);
+            })();
         },
         load: function(src, callback) {
             if (src.match(/\.\w+$/)) {
@@ -1506,15 +1508,17 @@ var zz = new function() {
                 case "gif":
                 case "jpg":
                 case "png":
-                    loadImage(src, callback);
+                    return _zz.loadImage(src, callback);
                     break;
                 case "js":
-                    loadJS(src, callback);
+                    return _zz.loadJS(src, callback);
                     break;
                 default:
+                    throw new Error("can not load. " + src + " is unsupported file type.");
                     break;
                 }
             }
+            return null;
         },
         modularize: function(local, global) {
             var merge = new Object();
