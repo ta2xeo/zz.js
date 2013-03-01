@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.4
+ * @version       0.0.5
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  * 読み込むだけで機能が有効になります。
  * 一緒にcss/debug.css, js/module/zz.keyboard.jsも読み込んで下さい。
@@ -24,6 +24,9 @@ zz.debug = new function() {
     // 選択中のDisplayObject
     var selected = null;
 
+    // 選択中のStageオブジェクト
+    var attachStage = null;
+
     // プロパティの情報
     var properties = [
         {"property": "x", "title": "X", "type": inputNumber, "ratio": 1},
@@ -36,6 +39,10 @@ zz.debug = new function() {
         {"property": "scaleY", "title": "Y(％)", "type": inputNumber, "ratio": 100},
         {"property": "visible", "title": "表示", "type": inputCheckbox},
         {"property": "referencePoint", "title": "参照位置", "type": referencePointList},
+        {"property": "tx", "title": "TX", "type": inputNumber, "ratio": 1},
+        {"property": "ty", "title": "TY", "type": inputNumber, "ratio": 1},
+        {"property": "tw", "title": "TW", "type": inputNumber, "ratio": 1},
+        {"property": "th", "title": "TH", "type": inputNumber, "ratio": 1},
         {"property": "timeLine", "title": "MC(-/-)", "type": inputRange}
     ];
 
@@ -65,14 +72,29 @@ zz.debug = new function() {
                 var property = properties[i];
                 var propertyName = property.property;
                 var input = property.input;
-                // MovieClipだけフレーム数表示
-                if (propertyName == "timeLine") {
+                // 対応外のものは非表示
+                switch (propertyName) {
+                case "timeLine":
                     if (selected instanceof zz.MovieClip) {
                         property.element.style.display = "block";
                     } else {
                         property.element.style.display = "none";
                         continue;
                     }
+                    break;
+                case "tx":
+                case "ty":
+                case "tw":
+                case "th":
+                    if (selected instanceof zz.Sprite) {
+                        property.element.style.display = "block";
+                    } else {
+                        property.element.style.display = "none";
+                        continue;
+                    }
+                    break;
+                default:
+                    break;
                 }
                 if (document.activeElement != input && input.value !== selected[propertyName]) {
                     switch (property.type) {
@@ -117,6 +139,10 @@ zz.debug = new function() {
      * @param {Object} defaults デフォルトのstyleをオブジェクト形式で渡せる
      */
     function createWindow(id, title, defaults) {
+        var exist = document.getElementById(id);
+        if (exist) {
+            return exist;
+        }
         var windowElement = document.createElement("div");
         windowElement.id = id;
         windowElement.className = "zz_debug_window";
@@ -191,7 +217,7 @@ zz.debug = new function() {
      * プロパティ確認用ウィンドウ作成
      */
     function createPropertyWindow() {
-        var window = createWindow("zz_debug_property", "プロパティ", {
+        var window = createWindow("zz_debug_property_window", "プロパティ", {
             position: "absolute",
             right: "0px",
             bottom: "0px"
@@ -205,6 +231,223 @@ zz.debug = new function() {
         return window;
     }
     window.addEventListener("load", createPropertyWindow);
+
+    /**
+     * DisplayObjectのツリー表示用ウィンドウ
+     */
+    function getObjectTreeWindow() {
+        var id = "zz_debug_object_tree_window";
+        var exist = document.getElementById(id);
+        if (exist) {
+            return exist;
+        }
+        var window = createWindow(id, "DisplayObject Tree", {
+            position: "absolute",
+            left: "0px",
+            bottom: "0px"
+        });
+        document.body.appendChild(window);
+        var objectTree = document.createElement("div");
+        objectTree.id = "zz_debug_object_tree";
+        window.appendChild(objectTree);
+        return window;
+    }
+
+    /**
+     * ステージウィンドウ
+     */
+    var stageSelector;
+    var fpsText, fpsInput;
+    var pauseButton;
+    var timeLineText;
+    var stageColorSelect;
+    var overflowInput;
+    function getStageWindow(stage) {
+        attachStage = stage;
+        var id = "zz_debug_stage_window";
+        var window = document.getElementById(id);
+
+        function changeStage(detach, attach) {
+            fpsInput.value = attach.actuallyFrameRate;
+            function updateFps() {
+                fpsText.innerHTML = ["FPS 本来:",
+                                     attachStage.expectFrameRate,
+                                     "/設定値:",
+                                     attachStage.actuallyFrameRate
+                                    ].join("");
+            }
+            function updateTimeLine() {
+                timeLineText.innerHTML = "現在:" + attachStage.frameCount + "フレーム目" + (attachStage.running ? "再生中" : "停止中");
+                if (attachStage.running) {
+                    pauseButton.value = "一時停止";
+                } else {
+                    pauseButton.value = "再生";
+                }
+            }
+            if (detach) {
+                detach.removeEventListener(Event.ENTER_FRAME, updateFps);
+                detach.removeEventListener(Event.ENTER_FRAME, updateTimeLine);
+                //detach.removeEventListener(DebugEvent.UPDATE_TREE, attach.createObjectTree);
+                detach.removeEventListener(zz.Event.ENTER_FRAME, updateProperty);
+            }
+            attach.addEventListener(Event.ENTER_FRAME, updateFps);
+            attach.addEventListener(Event.ENTER_FRAME, updateTimeLine);
+
+            var defaultColorIdx = parseInt(loadData("zz_debug_stageColor_" + attach.element.id) || 0, 10);
+            stageColorSelect.options[defaultColorIdx].selected = true;
+
+            overflowInput.checked = loadData("zz_debug_stageOverflow_" + attach.element.id);
+            attach.style.overflow = overflowInput.checked ? "" : "hidden";
+
+            attach.dispatchEvent(DebugEvent.UPDATE_TREE);
+        }
+
+        if (!window) {
+            window = createWindow(id, "Stage設定", {
+                position: "absolute",
+                top: "0px",
+                left: "0px"
+            });
+            document.body.appendChild(window);
+
+            // ステージ選択
+            (function() {
+                var line = document.createElement("div");
+                line.innerHTML = "ステージ選択:";
+                stageSelector = document.createElement("select");
+                stageSelector.id = "zz_debug_stage_window_selector";
+                line.appendChild(stageSelector);
+                window.appendChild(line);
+
+                stageSelector.addEventListener("mouseup", function(event) {
+                    var detachStage = attachStage;
+                    attachStage = stageSelector.options[stageSelector.selectedIndex].stage;
+                    changeStage(detachStage, attachStage);
+                });
+            })();
+
+            // FPS
+            (function() {
+                var line = document.createElement("div");
+                fpsText = document.createElement("span");
+                fpsText.innerHTML = "FPS:";
+                fpsInput = document.createElement("input");
+                fpsInput.type = "range";
+                fpsInput.max = 60;
+                fpsInput.min = 1;
+                fpsInput.value = stage.actuallyFrameRate;
+                fpsInput.addEventListener("mousedown", function(event) {
+                    event.stopPropagation();
+                });
+
+                function setFPS() {
+                    var n = parseInt(fpsInput.value, 10);
+                    if (!isNaN(n)) {
+                        attachStage.actuallyFrameRate = n;
+                        saveData("zz_debug_FrameRate_" + attachStage.element.id, n);
+                    }
+                }
+
+                fpsInput.addEventListener("change", setFPS);
+                fpsInput.addEventListener("input", setFPS);
+                line.appendChild(fpsText);
+                line.appendChild(fpsInput);
+                window.appendChild(line);
+            })();
+
+            // 再生、一時停止
+            (function() {
+                var line = document.createElement("div");
+                timeLineText = document.createElement("span");
+                function createButton(title) {
+                    var button = document.createElement("input");
+                    button.type = "button";
+                    button.value = title;
+                    button.style.margin = "5px 5px";
+                    button.style.width = "100px";
+                    return button;
+                }
+                pauseButton = createButton("一時停止");
+                pauseButton.addEventListener("click", function(event) {
+                    if (attachStage.running) {
+                        attachStage.pause();
+                        pauseButton.value = "再生";
+                        timeLineText.innerHTML = "現在:" + attachStage.frameCount + "フレーム目停止中";
+                    } else {
+                        attachStage.start();
+                        pauseButton.value = "一時停止";
+                        timeLineText.innerHTML = "現在:" + attachStage.frameCount + "フレーム目再生中";
+                    }
+                });
+                line.appendChild(pauseButton);
+                line.appendChild(timeLineText);
+                window.appendChild(line);
+            })();
+
+            // ステージ色
+            (function() {
+                var line = document.createElement("div");
+                var title = document.createElement("span");
+                title.innerHTML = "ステージ色:";
+                var select = stageColorSelect = document.createElement("select");
+                var colors = [
+                    ["透明", ""],
+                    ["半透明(黒10%)", "rgba(0, 0, 0, 0.1)"],
+                    ["半透明(黒25%)", "rgba(0, 0, 0, 0.25)"],
+                    ["黒", "#000"],
+                    ["白", "#fff"],
+                    ["赤", "#f00"],
+                    ["緑", "#0f0"],
+                    ["青", "#00f"]
+                ];
+                var defaultColorIdx = parseInt(loadData("zz_debug_stageColor_" + attachStage.element.id) || 0, 10);
+                for (var i = 0; i < colors.length; i++) {
+                    var c = colors[i];
+                    select.innerHTML += ['<option value="',
+                                         c[1],
+                                         '">',
+                                         c[0],
+                                         "</option>"].join("");
+                }
+                select.options[defaultColorIdx].selected = true;
+                stage.backgroundColor = select.options[defaultColorIdx].value;
+                select.addEventListener("mouseup", function(event) {
+                    var color = select.options[select.selectedIndex].value;
+                    attachStage.backgroundColor = color;
+                    saveData("zz_debug_stageColor_" + attachStage.element.id, select.selectedIndex);
+                });
+                line.appendChild(title);
+                line.appendChild(select);
+                window.appendChild(line);
+            })();
+
+            // 枠外表示
+            (function() {
+                var line = document.createElement("div");
+                var title = document.createElement("span");
+                title.innerHTML = "ステージ外表示";
+
+                var input = overflowInput = document.createElement("input");
+                input.type = "checkbox";
+                input.addEventListener("click", function(event) {
+                    attachStage.style.overflow = input.checked ? "" : "hidden";
+                    saveData("zz_debug_stageOverflow_" + attachStage.element.id, input.checked || "");
+                });
+                line.appendChild(title);
+                line.appendChild(input);
+                window.appendChild(line);
+            })();
+        }
+
+        var option = document.createElement("option");
+        option.innerHTML = stage.element.id;
+        option.selected = true;
+        option.stage = stage;
+        stageSelector.appendChild(option);
+
+        changeStage(null, stage);
+        return window;
+    }
 
     /**
      * input系で共通なもの
@@ -319,6 +562,7 @@ zz.debug = new function() {
                 selected.transform();
             }
         });
+        element.appendChild(title);
         element.appendChild(select);
         property.input = select;
         return element;
@@ -477,21 +721,10 @@ zz.debug = new function() {
             return false;
         });
 
-        // DisplayObjectのツリー表示用div要素
-        function createObjectTreeWindow() {
-            var window = createWindow("zz_debug_objectTree", "DisplayObject Tree", {
-                position: "absolute",
-                left: "0px",
-                bottom: "0px"
-            });
-            document.body.appendChild(window);
-            return window;
-        }
-
         // オブジェクトツリーのベースウィンドウ
-        var objectTreeWindow = createObjectTreeWindow();
-        var objectTree = document.createElement("div");
-        objectTreeWindow.appendChild(objectTree);
+        var objectTreeWindow = getObjectTreeWindow();
+        // オブジェクトツリーのベースウィンドウ
+        var objectTree = document.getElementById("zz_debug_object_tree");
 
         // 全体のツリーを作成
         function createObjectTree() {
@@ -558,149 +791,19 @@ zz.debug = new function() {
         // ステージウィンドウ
         (function() {
             // frameRateプロパティ書き換え
-            var expectFrameRate = loadData("debugFrameRate") || this.frameRate;
-            var actuallyFrameRate = expectFrameRate;
+            this.expectFrameRate = loadData("zz_debug_FrameRate_" + this.element.id) || this.frameRate;
+            this.actuallyFrameRate = this.expectFrameRate;
             Object.defineProperty(this, "frameRate", {
                 get: function() {
-                    return actuallyFrameRate;
+                    return this.actuallyFrameRate;
                 },
                 set: function(rate) {
-                    expectFrameRate = rate;
+                    this.expectFrameRate = rate;
                 }
             });
 
             // 表示ウィンドウ
-            var stageWindow = createWindow("zz_debug_stageProperty", "Stage設定", {
-                position: "absolute",
-                top: "0px",
-                left: "0px"
-            });
-
-            document.body.appendChild(stageWindow);
-
-            // fps
-            (function() {
-                var title = document.createElement("div");
-                title.innerHTML = "FPS:";
-                var input = document.createElement("input");
-                input.type = "range";
-                input.max = 60;
-                input.min = 1;
-                input.value = actuallyFrameRate;
-                input.addEventListener("mousedown", function(event) {
-                    event.stopPropagation();
-                });
-
-                function setFPS() {
-                    var n = parseInt(input.value, 10);
-                    if (!isNaN(n)) {
-                        actuallyFrameRate = n;
-                        saveData("debugFrameRate", n);
-                    }
-                }
-
-                input.addEventListener("change", setFPS);
-                input.addEventListener("input", setFPS);
-                title.appendChild(input);
-                stageWindow.appendChild(title);
-                this.addEventListener(zz.Event.ENTER_FRAME, function() {
-                    title.firstChild.nodeValue = ["FPS 本来:",
-                                                  expectFrameRate,
-                                                  "/設定値:",
-                                                  actuallyFrameRate
-                                                 ].join("");
-                });
-            }).call(this);
-
-            // 再生、一時停止
-            (function() {
-                var line = document.createElement("div");
-                var title = document.createElement("span");
-                title.innerHTML = this.running ? "再生中" : "停止中";
-                function createButton(title) {
-                    var button = document.createElement("input");
-                    button.type = "button";
-                    button.value = title;
-                    button.style.margin = "5px 5px";
-                    button.style.width = "100px";
-                    return button;
-                }
-                var suspend = createButton("一時停止");
-                suspend.addEventListener("click", function(event) {
-                    if (stage.running) {
-                        title.innerHTML = "停止中";
-                        suspend.value = "再生";
-                        stage.pause();
-                    } else {
-                        title.innerHTML = "再生中";
-                        suspend.value = "一時停止";
-                        stage.start();
-                    }
-                });
-                this.timeLineElement = document.createElement("span");
-                this.timeLineElement.innerHTML = "現在:" + this.frameCount + "フレーム目";
-                line.appendChild(suspend);
-                line.appendChild(this.timeLineElement);
-                line.appendChild(title);
-                stageWindow.appendChild(line);
-            }).call(this);
-
-            // ステージ色
-            (function() {
-                var line = document.createElement("div");
-                var title = document.createElement("span");
-                title.innerHTML = "ステージ色:";
-                var select = document.createElement("select");
-                var colors = [
-                    ["透明", ""],
-                    ["半透明(黒10%)", "rgba(0, 0, 0, 0.1)"],
-                    ["半透明(黒25%)", "rgba(0, 0, 0, 0.25)"],
-                    ["黒", "#000"],
-                    ["白", "#fff"],
-                    ["赤", "#f00"],
-                    ["緑", "#0f0"],
-                    ["青", "#00f"]
-                ];
-                var defaultColorIdx = parseInt(loadData("stageColor") || 0, 10);
-                for (var i = 0; i < colors.length; i++) {
-                    var c = colors[i];
-                    select.innerHTML += ['<option value="',
-                                         c[1],
-                                         '">',
-                                         c[0],
-                                         "</option>"].join("");
-                }
-                select.options[defaultColorIdx].selected = true;
-                this.backgroundColor = select.options[defaultColorIdx].value;
-                var self = this;
-                select.addEventListener("mouseup", function(event) {
-                    var color = select.options[select.selectedIndex].value;
-                    self.backgroundColor = color;
-                    saveData("stageColor", select.selectedIndex);
-                });
-                line.appendChild(title);
-                line.appendChild(select);
-                stageWindow.appendChild(line);
-            }).call(this);
-
-            // 枠外表示
-            (function() {
-                var line = document.createElement("div");
-                var title = document.createElement("span");
-                title.innerHTML = "ステージ外表示";
-
-                var input = document.createElement("input");
-                input.type = "checkbox";
-                input.checked = loadData("stageOverflow");
-                stage.style.overflow = input.checked ? "" : "hidden";
-                input.addEventListener("click", function(event) {
-                    stage.style.overflow = input.checked ? "" : "hidden";
-                    saveData("stageOverflow", input.checked || "");
-                });
-                line.appendChild(title);
-                line.appendChild(input);
-                stageWindow.appendChild(line);
-            }).call(this);
+            var stageWindow = getStageWindow(this);
         }).call(this);
     }
     debugStage.prototype = zz.createClass(debugStage, {
