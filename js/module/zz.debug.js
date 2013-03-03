@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.5
+ * @version       0.0.6
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  * 読み込むだけで機能が有効になります。
  * 一緒にcss/debug.css, js/module/zz.keyboard.jsも読み込んで下さい。
@@ -652,16 +652,19 @@ zz.debug = new function() {
      */
     function debugDisplayObject() {
         this.opened = false;
-        this.addEventListener(zz.TouchEvent.TOUCH_DOWN, function() {
-            this.opened = true;
-            setSelectLine(this);
-            var current = this.parent;
-            while (current) {
-                current.opened = true;
-                current = current.parent;
+        this.addEventListener(zz.TouchEvent.TOUCH_DOWN, function(event) {
+            // シフトキー押してると無効になる。
+            if (!event.shiftKey) {
+                this.opened = true;
+                setSelectLine(this);
+                var current = this.parent;
+                while (current) {
+                    current.opened = true;
+                    current = current.parent;
+                }
+                this.root.dispatchEvent(DebugEvent.UPDATE_TREE);
+                return true;
             }
-            this.root.dispatchEvent(DebugEvent.UPDATE_TREE);
-            return true;
         });
 
         // Firefoxだとアウトラインが広がるから再描画してやってごまかす。

@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.2.2
+ * @version       0.2.3
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -341,6 +341,9 @@ var zz = new function() {
         function dispatch(event, self) {
             var rect = self.element.getBoundingClientRect();
             var e = new Event(event.type);
+            e.ctrlKey = event.ctrlKey;
+            e.altKey = event.altKey;
+            e.shiftKey = event.shiftKey;
             if (ENV.TOUCH_ENABLED) {
                 if (event.touches.length) {
                     e.x = event.touches[0].clientX - rect.left << 0;
