@@ -13,7 +13,7 @@ zz.net = new function() {
      * The data object converts to get parameters.
      */
     function joinQuery(url, data) {
-        var params = new Array();
+        var params = [];
         for (var key in data) {
             params.push(key + "=" + encodeURIComponent(data[key]));
         }

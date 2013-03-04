@@ -65,7 +65,7 @@ zz.adv = new function() {
             offsetX + "px",  // ← →
             0 + "px"         // ↓
         ].join(" ");
-        this.setTexts(new Array());
+        this.setTexts([]);
         this.readyIcon = new DefaultReadyIcon();
         this.readyIcon.referencePoint = zz.ReferencePoint.BOTTOM | zz.ReferencePoint.RIGHT;
         this.readyIcon.setPosition(this.width - 10, this.height - 10);
@@ -107,10 +107,10 @@ zz.adv = new function() {
             var current = this.htmls[this.index];
 
             function parse(html) {
-                var chars = new Array();
-                var tags = new Object();
+                var chars = [];
+                var tags = {};
                 var ruby = {
-                    marks: new Object(),
+                    marks: {},
                     rt: false,
                     rp: false,
                     inside: function() {
@@ -121,7 +121,7 @@ zz.adv = new function() {
                 function appendTag(tag) {
                     var len = chars.length;
                     if (len in tags === false) {
-                        tags[len] = new Array();
+                        tags[len] = [];
                     }
                     tags[len].push(tag);
                 }
@@ -184,12 +184,12 @@ zz.adv = new function() {
                     comment: function(text) {
                     }
                 });
-                var htmlArray = new Array();
+                var htmlArray = [];
 
                 for (var i = 0, len = chars.length; i < len; i++) {
                     var text = chars.slice(0, i + 1);
-                    var stack = new Array();
-                    var used = new Object();
+                    var stack = [];
+                    var used = {};
                     for (var index in tags) {
                         var tag = tags[index].map(function(tag) {
                             if (index <= i) {
@@ -292,7 +292,7 @@ zz.adv = new function() {
         this._name.textColor = DEFAULT_TEXT_COLOR;
         this.defaultNameColor = this.nameColor;
         this.addChild(this._name);
-        this.nameColors = new Object();
+        this.nameColors = {};
     }
     NamePlate.prototype = zz.createClass(zz.Sprite, {
         name: {
@@ -365,9 +365,9 @@ zz.adv = new function() {
          * @param {Function} callback 全てのテキストが読み終わった時に呼ばれる
          */
         setData: function(data, callback) {
-            this.names = new Array();
-            this.images = new Array();
-            var texts = new Array();
+            this.names = [];
+            this.images = [];
+            var texts = [];
             for (var i = 0, len = data.length; i < len; i++) {
                 this.names.push(data[i].name);
                 texts.push(data[i].text);

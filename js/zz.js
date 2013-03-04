@@ -222,7 +222,7 @@ var zz = new function() {
          * @constructor
          */
         var _EventDispatcher = function() {
-            this.eventContainer = new Object();
+            this.eventContainer = {};
         };
         _EventDispatcher.prototype = {
             /**
@@ -231,7 +231,7 @@ var zz = new function() {
              */
             addEventListener: function(eventName, listener) {
                 if (!this.eventContainer[eventName]) {
-                    this.eventContainer[eventName] = new Array();
+                    this.eventContainer[eventName] = [];
                 }
                 this.removeEventListener(eventName, listener);
                 this.eventContainer[eventName].push(listener);
@@ -269,7 +269,7 @@ var zz = new function() {
                 var result = false;
                 if (typeof(event) == "string") {
                     eventName = event;
-                    obj = new Object();
+                    obj = {};
                     obj.name = eventName;
                 } else {
                     eventName = event.name;
@@ -593,8 +593,8 @@ var zz = new function() {
          */
         var _DisplayObjectContainer = function() {
             _zz.DisplayObject.apply(this);
-            this.children = new Array();
-            this.nameMap = new Object();
+            this.children = [];
+            this.nameMap = {};
         };
         _DisplayObjectContainer.prototype = createClass(DisplayObject, {
             /**
@@ -1175,10 +1175,10 @@ var zz = new function() {
              */
             setAnimation: function(data) {
                 this.frames = [undefined];
-                var tweenIndexes = new Array();
+                var tweenIndexes = [];
                 for (var time in data) {
                     if (!this.frames[time]) {
-                        this.frames[time] = new Object();
+                        this.frames[time] = {};
                     }
                     var d = data[time];
                     for (var key in d) {
@@ -1210,7 +1210,7 @@ var zz = new function() {
                                 var val = (end[key] - start[key]) / size;
                                 for (i = startIndex + 1; i < endIndex; i++) {
                                     if (!this.frames[i]) {
-                                        this.frames[i] = new Object();
+                                        this.frames[i] = {};
                                     }
                                     this.frames[i][key] = this.frames[i - 1][key] + val;
                                     //console.log(key, i, this.frames[i][key]);
@@ -1455,7 +1455,7 @@ var zz = new function() {
                     }
                 }
             }
-            var resources = new Array();
+            var resources = [];
             for (var i = 0; i < assetsCount; ++i) {
                 resources.push(_zz.load(assets[i], checkLoad));
             }
@@ -1524,7 +1524,7 @@ var zz = new function() {
             return null;
         },
         modularize: function(local, global) {
-            var merge = new Object();
+            var merge = {};
             for (var key in local) {
                 merge[key] = local[key];
             }

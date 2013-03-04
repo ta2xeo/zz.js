@@ -108,7 +108,7 @@ var ezslide = new function() {
             startY = event.y;
             touch = true;
             check = false;
-            stackX = new Array();
+            stackX = [];
             return false;
         });
         root.addEventListener(zz.TouchEvent.TOUCH_MOVE, function(event) {

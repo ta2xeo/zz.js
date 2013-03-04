@@ -62,7 +62,7 @@ zz.spriteAnimation = new function() {
             if (!(images instanceof Array)) {
                 images = Array.prototype.slice.call(arguments);
             }
-            this.sprites = new Array();
+            this.sprites = [];
             this.loadCount = 0;
             var len = images.length;
             for (var i = 0; i < len; i++) {
@@ -109,7 +109,7 @@ zz.spriteAnimation = new function() {
         setAnimationInterval: function(intervalFrame) {
             if (intervalFrame) {
                 if (intervalFrame instanceof Array) {
-                    this.intervalFrames = new Array();
+                    this.intervalFrames = [];
                     var interval = 1;
                     for (var i = 0, len = intervalFrame.length; i < len; i++) {
                         interval = intervalFrame[i] || interval;
@@ -144,8 +144,8 @@ zz.spriteAnimation = new function() {
             this.setAnimation(anim);
         },
         _getAnimationData: function() {
-            var anim = new Object();
-            this.spritesIndices = new Array();
+            var anim = {};
+            this.spritesIndices = [];
             var timeLine = 1;
             var interval = 1;
             for (var i = 0, len = this.numChildren; i < len; i++) {
@@ -190,15 +190,15 @@ zz.spriteAnimation = new function() {
                 self.loadComplete(spr)();
                 spr.visible = true;
             });
-            this.sprites = new Array();
+            this.sprites = [];
             this.sprites.push(spr);
             this.addChild(spr);
         },
         _getAnimationData: function() {
-            var anim = new Object();
+            var anim = {};
             var timeLine = 1;
 
-            var _anim = new Object();
+            var _anim = {};
             var _timeLine = 1;
             var spr = this.sprites[0];
             var w_cnt = spr.width / this.chipWidth;
@@ -218,7 +218,7 @@ zz.spriteAnimation = new function() {
             spr.setAnimation(_anim);
 
             var interval = 1;
-            this.spritesIndices = new Array();
+            this.spritesIndices = [];
             for (i = 0; i < this.chipCount; i++) {
                 this.spritesIndices.push(timeLine);
                 anim[timeLine] = {
