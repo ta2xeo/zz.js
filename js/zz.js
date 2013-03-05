@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.2.3
+ * @version       0.2.4
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -823,8 +823,9 @@ var zz = new function() {
                     return this.handle !== null;
                 }
             },
-            end: function() {
-                document.body.removeChild(this.element);
+            removeSelf: function() {
+                this.pause();
+                this.element.parentNode.removeChild(this.element);
             },
             displayState: {
                 set: function(state) {
