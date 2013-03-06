@@ -30,16 +30,16 @@ div.zz_debug_title:hover {
     cursor: move;
 }
 
-div#zz_debug_property {
+div#zz_debug_property_window {
     text-align: right;
 }
 
-div#zz_debug_objectTree {
+div#zz_debug_object_tree_window {
     background-color: rgba(200, 200, 200, 0.7);
 }
 
 /* インデント目的 */
-div#zz_debug_objectTree .group {
+div#zz_debug_object_tree_window .group {
     margin: 2px 5px;
     padding: 2px 10px;
 }
