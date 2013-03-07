@@ -851,7 +851,7 @@ zz.debug = new function() {
         function overwrite() {
             cls.apply(this, arguments);
             if (typeof extension != "function") {
-                throw new Error(extension + " is not function.");
+                throw new zz.ZZError(extension + " is not function.");
             }
             extension.apply(this, arguments);
         }

@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.2.4
+ * @version       0.2.5
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -141,7 +141,7 @@ var zz = new function() {
      * @param {Object} superClass
      * @param {Object} properties
      */
-    var createClass = function(superClass, properties) {
+    function createClass(superClass, properties) {
         for (var property in properties) {
             if (properties.hasOwnProperty(property)) {
                 if (typeof properties[property] == "function") {
@@ -154,7 +154,19 @@ var zz = new function() {
             }
         }
         return Object.create(superClass.prototype, properties);
-    };
+    }
+
+    /**
+     * ZZError
+     * 例外クラス
+     */
+    function ZZError() {
+        Error.apply(this, arguments);
+        this.name = "ZZError";
+        this.message = arguments[0] || "";
+        console.error(this.message);
+    }
+    ZZError.prototype = createClass(Error, {});
 
     /**
      * Event
@@ -171,17 +183,17 @@ var zz = new function() {
         /**
          * @param {String} eventName
          */
-        var _Event = function(eventName) {
+        function Event(eventName) {
             this.name = eventName;
             this.x = 0;
             this.y = 0;
-        };
-
-        for (var key in define) {
-            _Event[key] = define[key];
         }
 
-        return _Event;
+        for (var key in define) {
+            Event[key] = define[key];
+        }
+
+        return Event;
     };
 
     /**
@@ -221,10 +233,10 @@ var zz = new function() {
         /**
          * @constructor
          */
-        var _EventDispatcher = function() {
+        function EventDispatcher() {
             this.eventContainer = {};
-        };
-        _EventDispatcher.prototype = {
+        }
+        EventDispatcher.prototype = {
             /**
              * @param {String} eventName
              * @param {Function} listener
@@ -290,7 +302,7 @@ var zz = new function() {
                 return result;
             }
         };
-        return _EventDispatcher;
+        return EventDispatcher;
     };
 
     /**
@@ -301,7 +313,7 @@ var zz = new function() {
         /**
          * @constructor
          */
-        var _DisplayObject = function() {
+        function DisplayObject() {
             _zz.EventDispatcher.apply(this);
             if (!this.element) {
                 this.element = document.createElement("div");
@@ -336,7 +348,7 @@ var zz = new function() {
                     }
                 };
             }
-        };
+        }
 
         function dispatch(event, self) {
             var rect = self.element.getBoundingClientRect();
@@ -364,7 +376,7 @@ var zz = new function() {
             }
         }
 
-        _DisplayObject.prototype = createClass(EventDispatcher, {
+        DisplayObject.prototype = createClass(EventDispatcher, {
             transform: function() {
                 this.style[PREFIX + "Transform"] = [
                     "translate(" + this._x + "px," + this._y + "px)",
@@ -392,7 +404,7 @@ var zz = new function() {
                 }
             },
             globalToLocal: function(globalX, globalY) {
-                throw new Error("Not implemented error.");
+                throw new ZZError("Not implemented error.");
             },
             localToGlobal: function(localX, localY) {
                 var x = localX, y = localY;
@@ -420,7 +432,7 @@ var zz = new function() {
                             this.parent.nameMap[this._name] = null;
                         }
                         if (name in this.parent.nameMap) {
-                            throw new Error("duplicate key error. " + name + " is already defined.");
+                            throw new ZZError("duplicate key error. " + name + " is already defined.");
                         }
                         if (name) {
                             this.parent.nameMap[name] = this;
@@ -580,7 +592,7 @@ var zz = new function() {
                 this.parent.removeChild(this);
             }
         });
-        return _DisplayObject;
+        return DisplayObject;
     };
 
     /**
@@ -591,12 +603,12 @@ var zz = new function() {
         /**
          * @constructor
          */
-        var _DisplayObjectContainer = function() {
+        function DisplayObjectContainer() {
             _zz.DisplayObject.apply(this);
             this.children = [];
             this.nameMap = {};
-        };
-        _DisplayObjectContainer.prototype = createClass(DisplayObject, {
+        }
+        DisplayObjectContainer.prototype = createClass(DisplayObject, {
             /**
              * @param {DisplayObject} child
              */
@@ -609,7 +621,7 @@ var zz = new function() {
              */
             addChildAt: function(child, index) {
                 if (child instanceof _zz.DisplayObject === false) {
-                    throw new Error(Object.prototype.toString(child) + " is not DisplayObject.");
+                    throw new ZZError(Object.prototype.toString(child) + " is not DisplayObject.");
                 }
                 child.parent = this;
                 if (index < this.numChildren) {
@@ -621,7 +633,7 @@ var zz = new function() {
                 _zz.DisplayObject.prototype.transform.call(child);
                 if (child.name) {
                     if (child.name in this.nameMap) {
-                        throw new Error("duplicate key error. " + child.name + " is already defined.");
+                        throw new ZZError("duplicate key error. " + child.name + " is already defined.");
                     }
                     this.nameMap[child.name] = child;
                 }
@@ -666,7 +678,7 @@ var zz = new function() {
                         return i;
                     }
                 }
-                throw new Error("child is not contained.");
+                throw new ZZError("child is not contained.");
             },
             /**
              * @param {DisplayObject} child
@@ -748,7 +760,7 @@ var zz = new function() {
                 }
             }
         });
-        return _DisplayObjectContainer;
+        return DisplayObjectContainer;
     };
 
     /**
@@ -759,7 +771,7 @@ var zz = new function() {
         /**
          * @param {String} stageId
          */
-        var _Stage = function(stageId) {
+        function Stage(stageId) {
             var root = document.getElementById(stageId);
             if (!root) {
                 root = document.createElement("div");
@@ -782,8 +794,8 @@ var zz = new function() {
             this.handle = null;
             this.start();
             this.renderLoop();
-        };
-        _Stage.prototype = createClass(DisplayObjectContainer, {
+        }
+        Stage.prototype = createClass(DisplayObjectContainer, {
             onEnterFrame: function() {
                 var prev = performance.now();
                 _zz.DisplayObjectContainer.prototype.onEnterFrame.call(this);
@@ -859,7 +871,7 @@ var zz = new function() {
                 }
             }
         });
-        return _Stage;
+        return Stage;
     };
 
     /**
@@ -870,13 +882,13 @@ var zz = new function() {
         /**
          * @constructor
          */
-        var _Sprite = function(src, x, y) {
+        function Sprite(src, x, y) {
             this.canvas = document.createElement("canvas");
             _zz.DisplayObjectContainer.apply(this);
             this.canvas.style.position = "absolute";
             this.context = this.canvas.getContext("2d");
             this.element.appendChild(this.canvas);
-            if (src) {
+            if (arguments.length > 0) {
                 this.loadImage(src);
             } else {
                 this.width = 0;
@@ -899,9 +911,9 @@ var zz = new function() {
             this._green = 100;
             this._blue = 100;
             this._canvasDirty = true;
-        };
+        }
 
-        _Sprite.prototype = createClass(DisplayObjectContainer, {
+        Sprite.prototype = createClass(DisplayObjectContainer, {
             tx: {
                 get: function() {
                     return this._tx;
@@ -1144,7 +1156,7 @@ var zz = new function() {
                 this._canvasDirty = true;
             }
         });
-        return _Sprite;
+        return Sprite;
     };
 
     /**
@@ -1154,15 +1166,15 @@ var zz = new function() {
         /**
          * @constructor
          */
-        var _MovieClip = function(src, x, y) {
+        function MovieClip(src, x, y) {
             _zz.Sprite.apply(this, arguments);
             this.currentFrame = 1;
             this.frames = [undefined];
             this.playing = true;
             this.currentLabel = "";
             this._mcDirty = true;
-        };
-        _MovieClip.prototype = createClass(Sprite, {
+        }
+        MovieClip.prototype = createClass(Sprite, {
             /**
              * フレームの総数
              */
@@ -1311,21 +1323,21 @@ var zz = new function() {
                 }
             }
         });
-        return _MovieClip;
+        return MovieClip;
     };
 
     /**
      * TextFormat
      */
     var TextFormat = new function() {
-        var _TextFormat = function() {
+        function TextFormat() {
             this.font = "";
             this.bold = false;
             this.italic = false;
             this.size = null;
             this.color = "";
-        };
-        return _TextFormat;
+        }
+        return TextFormat;
     };
 
     /**
@@ -1350,14 +1362,14 @@ var zz = new function() {
         /**
          * @constructor
          */
-        var _TextField = function(text) {
+        function TextField(text) {
             _zz.DisplayObject.apply(this);
             this.text = text || "";
             this.style.visibility = "hidden";
             this.style.display = "block";
             this.visible = true;
-        };
-        _TextField.prototype = createClass(DisplayObject, {
+        }
+        TextField.prototype = createClass(DisplayObject, {
             defaultTextFormat: {
                 get: function() {
                     return this._defaultTextFormat;
@@ -1412,11 +1424,12 @@ var zz = new function() {
                 }
             }
         });
-        return _TextField;
+        return TextField;
     };
 
     var registration = {
         ENV: ENV,
+        ZZError: ZZError,
         Event: Event,
         TouchEvent: TouchEvent,
         ReferencePoint: ReferencePoint,
@@ -1445,7 +1458,7 @@ var zz = new function() {
          */
         preload: function(assets, callback) {
             if (!(assets instanceof Array)) {
-                throw new Error("assets must be array.");
+                throw new ZZError("assets must be array.");
             }
             var assetsCount = assets.length;
             function checkLoad() {
@@ -1463,6 +1476,9 @@ var zz = new function() {
             return resources;
         },
         loadImage: function(src, callback) {
+            if (!src) {
+                new ZZError("Image path is undefined.");
+            }
             var img = new Image();
             img.src = src;
             var retry = DEFAULT_RETRY_COUNT;
@@ -1471,7 +1487,7 @@ var zz = new function() {
                 if (retry--) {
                     img.src = src;
                 } else {
-                    throw new Error('Could not load image files: ' + src);
+                    throw new ZZError('Could not load image files: ' + src);
                 }
             };
 
@@ -1483,6 +1499,9 @@ var zz = new function() {
             return img;
         },
         loadJS: function(src, callback) {
+            if (!src) {
+                throw new ZZError("JS path is undefined.");
+            }
             var head = document.getElementsByTagName("head")[0];
             var retry = DEFAULT_RETRY_COUNT;
 
@@ -1494,7 +1513,7 @@ var zz = new function() {
                     if (retry--) {
                         load();
                     } else {
-                        throw new Error('Could not load script files: ' + src);
+                        throw new ZZError('Could not load script files: ' + src);
                     }
                 };
                 script.onload = function() {
@@ -1518,7 +1537,7 @@ var zz = new function() {
                     return _zz.loadJS(src, callback);
                     break;
                 default:
-                    throw new Error("can not load. " + src + " is unsupported file type.");
+                    throw new ZZError("can not load. " + src + " is unsupported file type.");
                     break;
                 }
             }

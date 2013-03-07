@@ -99,7 +99,7 @@ zz.preload = new function() {
 
     return function(assets, callback, options) {
         if (!(assets instanceof Array)) {
-            throw new Error('assets must be array.');
+            throw new zz.ZZError('assets must be array.');
         }
         progressBar(assets, callback, options);
     };

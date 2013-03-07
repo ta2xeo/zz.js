@@ -96,11 +96,11 @@ zz.spriteAnimation = new function() {
             if (this.spritesIndices) {
                 var frame = this.spritesIndices[index];
                 if (!frame) {
-                    throw new Error("invalid index.");
+                    throw new zz.ZZError("invalid index.");
                 }
                 this.setFrame(frame);
             } else {
-                throw new Error("sprites are not loaded yet.");
+                throw new zz.ZZError("sprites are not loaded yet.");
             }
         },
         /**
