@@ -1395,7 +1395,7 @@ var zz = new function() {
                     s.fontStyle = this.style.fontStyle;
                     s.fontSize = this.style.fontSize;
                     this.element.innerHTML = ruler.innerHTML = text;
-                    this.setSize(ruler.offsetWidth, ruler.offsetHeight);
+                    this.setSize(ruler.offsetWidth + 1, ruler.offsetHeight + 1);
                 }
             },
             textColor: {
