@@ -1349,6 +1349,7 @@ var zz = new function() {
          * create element to get text size.
          */
         var ruler;
+        var addWidth = ENV.RENDERING_ENGINE == "Gecko" ? 1 : 0;
         window.addEventListener("load", function(e) {
             ruler = document.createElement("span");
             ruler.style.visibility = "hidden";
@@ -1395,7 +1396,7 @@ var zz = new function() {
                     s.fontStyle = this.style.fontStyle;
                     s.fontSize = this.style.fontSize;
                     this.element.innerHTML = ruler.innerHTML = text;
-                    this.setSize(ruler.offsetWidth + 1, ruler.offsetHeight + 1);
+                    this.setSize(ruler.scrollWidth + addWidth, ruler.scrollHeight);
                 }
             },
             textColor: {
