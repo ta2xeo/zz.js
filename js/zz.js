@@ -1381,6 +1381,7 @@ var zz = new function() {
                     this.style.fontStyle = fmt.italic ? "italic" : "normal";
                     this.style.fontSize = fmt.size ? fmt.size + "px" : "";
                     this.style.color = fmt.color;
+                    this.text = this.text;
                 }
             },
             text: {
