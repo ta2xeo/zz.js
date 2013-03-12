@@ -134,7 +134,16 @@ var zz = new function() {
         MIDDLE: 3,
         LEFT: 4,
         RIGHT: 8,
-        CENTER: 12
+        CENTER: 12,
+        LEFT_TOP: 5,
+        LEFT_MIDDLE: 7,
+        LEFT_BOTTOM: 6,
+        CENTER_TOP: 13,
+        CENTER_MIDDLE: 15,
+        CENTER_BOTTOM: 14,
+        RIGHT_TOP: 9,
+        RIGHT_MIDDLE: 11,
+        RIGHT_BOTTOM: 10
     };
 
     /**

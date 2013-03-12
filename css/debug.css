@@ -16,6 +16,11 @@ div.zz_debug_window div {
     padding: 0px 8px;
 }
 
+div.zz_debug_window input[type="button"] {
+    padding: 0px;
+    font-size: 0.8em;
+}
+
 div.zz_debug_title {
     margin: 0px 0px 8px 0px;
     padding: 3px 8px;
