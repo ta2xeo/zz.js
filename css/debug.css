@@ -2,7 +2,6 @@
 
 div.zz_debug_window {
     color: #000000;
-    z-index: 10000;
     display: inline-block;
     border-radius: 8px;
     border: 2px solid #aaaaaa;

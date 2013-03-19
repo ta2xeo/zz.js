@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.6
+ * @version       0.0.7
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  * 読み込むだけで機能が有効になります。
  * 一緒にcss/debug.css, js/module/zz.keyboard.jsも読み込んで下さい。
@@ -15,6 +15,8 @@
 "use strict";
 
 zz.debug = new function() {
+    // style.zIndex
+    var DEFAULT_Z_INDEX = 10000;
     var RP = zz.ReferencePoint;
     var DebugEvent = {
         REDRAW: "__redraw__",
@@ -138,14 +140,17 @@ zz.debug = new function() {
      * @param {String} title ウィンドウのタイトルバーに表示される文字
      * @param {Object} defaults デフォルトのstyleをオブジェクト形式で渡せる
      */
+    var windows = [];
     function createWindow(id, title, defaults) {
         var exist = document.getElementById(id);
         if (exist) {
             return exist;
         }
         var windowElement = document.createElement("div");
+        windows.push(windowElement);
         windowElement.id = id;
         windowElement.className = "zz_debug_window";
+        windowElement.style.zIndex = DEFAULT_Z_INDEX;
         if (defaults) {
             for (var property in defaults) {
                 var val = defaults[property];
@@ -182,6 +187,19 @@ zz.debug = new function() {
                 }
             }
 
+            windowElement.addEventListener("mousedown", function(event) {
+                for (var i = 0, len = windows.length; i < len; i++) {
+                    var w = windows[i];
+                    if (w === windowElement) {
+                        w.style.zIndex = DEFAULT_Z_INDEX + 1;
+                    } else {
+                        w.style.zIndex = DEFAULT_Z_INDEX;
+                    }
+                }
+                event.preventDefault();
+                event.stopPropagation();
+            });
+
             titleElement.addEventListener("mousedown", function(event) {
                 dragging = true;
                 relativeX = event.layerX;
@@ -195,8 +213,6 @@ zz.debug = new function() {
                 windowElement.style.right = "";
                 windowElement.style.position = "absolute";
                 document.addEventListener("mousemove", move);
-                event.preventDefault();
-                event.stopPropagation();
             });
 
             function release(event) {
@@ -760,14 +776,12 @@ zz.debug = new function() {
                     }
                 }
 
-                function createInput() {
+                function createNamePlate() {
                     var e = document.createElement("input");
                     e.type = "button";
                     var s = e.style;
                     e.onmousedown = function(event) {
                         setSelectLine(displayObject);
-                        displayObject.opened ^= true;
-                        openChildren();
                         stage.dispatchEvent(DebugEvent.UPDATE_TREE);
                     };
                     var name = "[" + (displayObject.name || "-") + "]";
@@ -779,7 +793,24 @@ zz.debug = new function() {
                     e.value = name;
                     return e;
                 }
-                group.appendChild(createInput());
+
+                function createOpenButton() {
+                    var e = document.createElement("input");
+                    e.type = "button";
+                    var s = e.style;
+                    e.value = displayObject.opened ? "-" : "+";
+                    e.onmousedown = function(event) {
+                        displayObject.opened ^= true;
+                        openChildren();
+                        stage.dispatchEvent(DebugEvent.UPDATE_TREE);
+                    };
+                    return e;
+                }
+
+                group.appendChild(createNamePlate());
+                if (displayObject instanceof zz.DisplayObjectContainer) {
+                    group.appendChild(createOpenButton());
+                }
                 parentElement.appendChild(group);
                 openChildren();
             }
