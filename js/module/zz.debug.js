@@ -196,8 +196,11 @@ zz.debug = new function() {
                         w.style.zIndex = DEFAULT_Z_INDEX;
                     }
                 }
-                event.preventDefault();
-                event.stopPropagation();
+                var exclude = {"input": 1, "select": 1};
+                if (!(event.target.tagName.toLowerCase() in exclude)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
             });
 
             titleElement.addEventListener("mousedown", function(event) {
