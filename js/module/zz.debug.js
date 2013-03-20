@@ -773,7 +773,9 @@ zz.debug = new function() {
                         if (displayObject instanceof zz.DisplayObjectContainer) {
                             for (var i = 0, len = displayObject.numChildren; i < len; i++) {
                                 var c = displayObject.getChildAt(i);
-                                createObject(group, c);
+                                if (c) {
+                                    createObject(group, c);
+                                }
                             }
                         }
                     }
