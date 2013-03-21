@@ -33,7 +33,7 @@ zz.net = new function() {
      * jump by GET.
      */
     function location(url, data) {
-        location.href = joinQuery(url, data);
+        window.location.href = joinQuery(url, data);
     }
 
     /**
