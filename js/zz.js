@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.2.5
+ * @version       0.2.6
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -285,6 +285,9 @@ var zz = new function() {
              * @param {String|Event} event
              */
             dispatchEvent: function(event) {
+                if (!event) {
+                    throw new ZZError("event is invalid.");
+                }
                 var eventName;
                 var obj;
                 var result = false;
@@ -518,6 +521,9 @@ var zz = new function() {
                 }
             },
             scale: {
+                get: function() {
+                    return this._scaleX;
+                },
                 set: function(scale) {
                     this._scaleX = scale;
                     this._scaleY = scale;
@@ -1378,6 +1384,7 @@ var zz = new function() {
             this.style.visibility = "hidden";
             this.style.display = "block";
             this.visible = true;
+            this.autoResize = true;
         }
         TextField.prototype = createClass(DisplayObject, {
             defaultTextFormat: {
@@ -1399,13 +1406,17 @@ var zz = new function() {
                     return this.element.innerHTML;
                 },
                 set: function(text) {
-                    var s = ruler.style;
-                    s.fontFamily = this.style.fontFamily;
-                    s.fontWeight = this.style.fontWeight;
-                    s.fontStyle = this.style.fontStyle;
-                    s.fontSize = this.style.fontSize;
-                    this.element.innerHTML = ruler.innerHTML = text;
-                    this.setSize(ruler.scrollWidth + addWidth, ruler.scrollHeight);
+                    if (this.autoResize) {
+                        var s = ruler.style;
+                        s.fontFamily = this.style.fontFamily;
+                        s.fontWeight = this.style.fontWeight;
+                        s.fontStyle = this.style.fontStyle;
+                        s.fontSize = this.style.fontSize;
+                        this.element.innerHTML = ruler.innerHTML = text;
+                        this.setSize(ruler.scrollWidth + addWidth, ruler.scrollHeight);
+                    } else {
+                        this.element.innerHTML = ruler.innerHTML = text;
+                    }
                 }
             },
             textColor: {

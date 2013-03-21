@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.1
+ * @version       0.0.2
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -16,6 +16,7 @@ function main() {
     var root = new Stage("stage");
 
     var textArea = new TextArea(500, 140);
+    textArea.setParser(zz.adv.htmlParser);
     textArea.setPosition(root.width / 2, 100);
     textArea.referencePoint = ReferencePoint.TOP | ReferencePoint.CENTER;
 
@@ -78,7 +79,12 @@ function main() {
         100: {alpha: 0, tween: true, stop: true, event: "end"}
     });
 
+    function addTouchEvent() {
+        textArea.addEventListener(TouchEvent.TOUCH_DOWN, nextScene);
+    }
+
     function nextScene() {
+        textArea.removeEventListener(TouchEvent.TOUCH_DOWN, nextScene);
         root.addChild(whiteOut);
         controller.setData([
             {
@@ -104,7 +110,7 @@ function main() {
         textArea.cleanEventListener(TouchEvent.TOUCH_DOWN);
     }
 
-    controller.setData(data, nextScene);
+    controller.setData(data, addTouchEvent);
     controller.preloadImages();
     textArea.addEventListener(TouchEvent.TOUCH_DOWN, function() {
         controller.read();
