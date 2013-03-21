@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.1
+ * @version       0.0.2
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -27,6 +27,13 @@ zz.net = new function() {
             url += "?" + query;
         }
         return url;
+    }
+
+    /**
+     * jump by GET.
+     */
+    function location(url, data) {
+        location.href = joinQuery(url, data);
     }
 
     /**
@@ -70,6 +77,7 @@ zz.net = new function() {
     return zz.modularize(
         {
             joinQuery: joinQuery,
+            location: location,
             submitForm: submitForm,
             submitFormByPOST: submitFormByPOST,
             submitFormByGET: submitFormByGET
