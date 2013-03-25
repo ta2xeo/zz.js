@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.7
+ * @version       0.0.8
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  * 読み込むだけで機能が有効になります。
  * 一緒にcss/debug.css, js/module/zz.keyboard.jsも読み込んで下さい。
@@ -281,45 +281,46 @@ zz.debug = new function() {
     var timeLineText;
     var stageColorSelect;
     var overflowInput;
+
+    function changeStage(detach, attach) {
+        fpsInput.value = attach.actuallyFrameRate;
+        function updateFps() {
+            fpsText.innerHTML = ["FPS 本来:",
+                                 attachStage.expectFrameRate,
+                                 "/設定値:",
+                                 attachStage.actuallyFrameRate
+                                ].join("");
+        }
+        function updateTimeLine() {
+            timeLineText.innerHTML = "現在:" + attachStage.frameCount + "フレーム目" + (attachStage.running ? "再生中" : "停止中");
+            if (attachStage.running) {
+                pauseButton.value = "一時停止";
+            } else {
+                pauseButton.value = "再生";
+            }
+        }
+        if (detach) {
+            detach.removeEventListener(Event.ENTER_FRAME, updateFps);
+            detach.removeEventListener(Event.ENTER_FRAME, updateTimeLine);
+            //detach.removeEventListener(DebugEvent.UPDATE_TREE, attach.createObjectTree);
+            detach.removeEventListener(zz.Event.ENTER_FRAME, updateProperty);
+        }
+        attach.addEventListener(Event.ENTER_FRAME, updateFps);
+        attach.addEventListener(Event.ENTER_FRAME, updateTimeLine);
+
+        var defaultColorIdx = parseInt(loadData("zz_debug_stageColor_" + attach.element.id) || 0, 10);
+        stageColorSelect.options[defaultColorIdx].selected = true;
+
+        overflowInput.checked = loadData("zz_debug_stageOverflow_" + attach.element.id);
+        attach.style.overflow = overflowInput.checked ? "" : "hidden";
+
+        attach.dispatchEvent(DebugEvent.UPDATE_TREE);
+    }
+
     function getStageWindow(stage) {
         attachStage = stage;
         var id = "zz_debug_stage_window";
         var window = document.getElementById(id);
-
-        function changeStage(detach, attach) {
-            fpsInput.value = attach.actuallyFrameRate;
-            function updateFps() {
-                fpsText.innerHTML = ["FPS 本来:",
-                                     attachStage.expectFrameRate,
-                                     "/設定値:",
-                                     attachStage.actuallyFrameRate
-                                    ].join("");
-            }
-            function updateTimeLine() {
-                timeLineText.innerHTML = "現在:" + attachStage.frameCount + "フレーム目" + (attachStage.running ? "再生中" : "停止中");
-                if (attachStage.running) {
-                    pauseButton.value = "一時停止";
-                } else {
-                    pauseButton.value = "再生";
-                }
-            }
-            if (detach) {
-                detach.removeEventListener(Event.ENTER_FRAME, updateFps);
-                detach.removeEventListener(Event.ENTER_FRAME, updateTimeLine);
-                //detach.removeEventListener(DebugEvent.UPDATE_TREE, attach.createObjectTree);
-                detach.removeEventListener(zz.Event.ENTER_FRAME, updateProperty);
-            }
-            attach.addEventListener(Event.ENTER_FRAME, updateFps);
-            attach.addEventListener(Event.ENTER_FRAME, updateTimeLine);
-
-            var defaultColorIdx = parseInt(loadData("zz_debug_stageColor_" + attach.element.id) || 0, 10);
-            stageColorSelect.options[defaultColorIdx].selected = true;
-
-            overflowInput.checked = loadData("zz_debug_stageOverflow_" + attach.element.id);
-            attach.style.overflow = overflowInput.checked ? "" : "hidden";
-
-            attach.dispatchEvent(DebugEvent.UPDATE_TREE);
-        }
 
         if (!window) {
             window = createWindow(id, "Stage設定", {
@@ -664,6 +665,18 @@ zz.debug = new function() {
             --depth;
         })(obj);
         selected = obj;
+
+        // 選択ステージ表示
+        var detachStage = attachStage;
+        attachStage = selected.root;
+        changeStage(detachStage, attachStage);
+        for (var i = 0; i < stageSelector.options.length; i++) {
+            if (attachStage === stageSelector.options[i].stage) {
+                stageSelector.options[i].selected = true;
+            } else {
+                stageSelector.options[i].selected = false;
+            }
+        }
     }
 
     /**
