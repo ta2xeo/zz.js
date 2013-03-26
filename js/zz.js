@@ -1412,8 +1412,9 @@ var zz = new function() {
                         s.fontWeight = this.style.fontWeight;
                         s.fontStyle = this.style.fontStyle;
                         s.fontSize = this.style.fontSize;
-                        this.element.innerHTML = ruler.innerHTML = text;
+                        ruler.innerHTML = text;
                         this.setSize(ruler.scrollWidth + addWidth, ruler.scrollHeight);
+                        this.element.innerHTML = text;
                     } else {
                         this.element.innerHTML = ruler.innerHTML = text;
                     }
