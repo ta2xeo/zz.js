@@ -216,13 +216,14 @@ zz.adv = new function() {
              */
             _print: function() {
                 var idx = this._index >= this.current.length ? this.current.length - 1 : this._index;
-                this.text = this.current[idx];
+                this.text = this.current[idx] || "";
                 this.dispatchEvent(new TypewriterEvent(TypewriterEvent.TYPING, idx + 1));
             },
             /**
              * 表示開始時に呼ばれる
              */
             _start: function() {
+                this.dispatchEvent(new TypewriterEvent(TypewriterEvent.START));
                 this.ready = false;
                 this._count = 0;
                 this._index = 0;
@@ -280,7 +281,6 @@ zz.adv = new function() {
             typing: function() {
                 if (this._textArray.length !== 0) {
                     this.next();
-                    this.dispatchEvent(new TypewriterEvent(TypewriterEvent.START));
                     this._start();
                 } else {
                     this.dispatchEvent(new TypewriterEvent(TypewriterEvent.END));
