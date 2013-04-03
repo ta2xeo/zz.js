@@ -48,6 +48,11 @@ zz.spriteAnimation = new function() {
                     self.spritesLoaded = true;
                     if (self.autoPlay) {
                         self.gotoAndPlay(self.currentFrame);
+                    } else {
+                        var first = self.sprites[0];
+                        if (first) {
+                            self.setSize(first.width, first.height);
+                        }
                     }
                     self.dispatchEvent(SpriteEvent.LOAD_SPRITES);
                 }
