@@ -81,7 +81,9 @@ zz.spriteAnimation = new function() {
             return function() {
                 for (var i = 0, len = this.numChildren; i < len; i++) {
                     if (index === i) {
-                        this.getChildAt(i).visible = true;
+                        var c = this.getChildAt(i);
+                        this.setSize(c.width, c.height);
+                        c.visible = true;
                     } else {
                         this.getChildAt(i).visible = false;
                     }

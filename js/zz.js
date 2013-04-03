@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.2.6
+ * @version       0.2.7
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -348,6 +348,7 @@ var zz = new function() {
             this.rotation = 0;
             this.alpha = 1;
             this.visible = true;
+            this.inversion = false;
             this.referencePoint = ReferencePoint.LEFT | ReferencePoint.TOP;
             this._dirty = false;
             this.enabled = true;
@@ -573,6 +574,40 @@ var zz = new function() {
                     this.style.backgroundColor = color;
                 }
             },
+            inversion: {
+                get: function() {
+                    return this._inversion;
+                },
+                set: function(invert) {
+                    function normal() {
+                        this.style[PREFIX + "Transform"] = [
+                            "translate(" + this._x + "px," + this._y + "px)",
+                            "rotate(" + this.rotation + "deg)",
+                            "scale(" + this.scaleX + "," + this.scaleY + ")"
+                        ].join(" ");
+                    }
+                    function reverse() {
+                        this.style[PREFIX + "Transform"] = [
+                            "translate(" + this._x + "px," + this._y + "px)",
+                            "rotate(" + this.rotation + "deg)",
+                            "scale(" + -this.scaleX + "," + this.scaleY + ")"
+                        ].join(" ");
+                    }
+                    var descriptor = {
+                        writable: true,
+                        enumerable: true
+                    };
+                    if (invert) {
+                        descriptor.value = reverse;
+                    } else {
+                        descriptor.value = normal;
+                    }
+                    Object.defineProperty(this, "transform", descriptor);
+                    this._inversion = invert;
+                    this.referencePoint = this.referencePoint;
+                    this._dirty = true;
+                }
+            },
             referencePoint: {
                 get: function() {
                     return this._reference;
@@ -583,11 +618,21 @@ var zz = new function() {
                         this.referenceX = 50;
                         this.style.left = -(this.width / 2 << 0) + "px";
                     } else if ((point & ReferencePoint.RIGHT) == ReferencePoint.RIGHT) {
-                        this.referenceX = 100;
-                        this.style.left = -this.width + "px";
+                        if (this.inversion) {
+                            this.referenceX = 0;
+                            this.style.left = "0px";
+                        } else {
+                            this.referenceX = 100;
+                            this.style.left = -this.width + "px";
+                        }
                     } else {
-                        this.referenceX = 0;
-                        this.style.left = "0px";
+                        if (this.inversion) {
+                            this.referenceX = 100;
+                            this.style.left = -this.width + "px";
+                        } else {
+                            this.referenceX = 0;
+                            this.style.left = "0px";
+                        }
                     }
                     if ((point & ReferencePoint.MIDDLE) == ReferencePoint.MIDDLE || point == ReferencePoint.CENTER) {
                         this.referenceY = 50;
