@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.2.7
+ * @version       0.2.8
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -602,7 +602,7 @@ var zz = new function() {
                     } else {
                         descriptor.value = normal;
                     }
-                    Object.defineProperty(this, "transform", descriptor);
+                    Object.defineProperty(DisplayObject.prototype, "transform", descriptor);
                     this._inversion = invert;
                     this.referencePoint = this.referencePoint;
                     this._dirty = true;
@@ -690,7 +690,7 @@ var zz = new function() {
                     this.element.appendChild(child.element);
                 }
                 this.children.splice(index, 0, child);
-                _zz.DisplayObject.prototype.transform.call(child);
+                child.transform();
                 if (child.name) {
                     if (child.name in this.nameMap) {
                         throw new ZZError("duplicate key error. " + child.name + " is already defined.");
@@ -788,10 +788,12 @@ var zz = new function() {
                 }
             },
             render: function() {
-                _zz.DisplayObject.prototype.render.call(this);
-                for (var i = 0, len = this.numChildren; i < len; i++) {
-                    if (this.children[i]) {
-                        this.children[i].render();
+                if (this.visible) {
+                    _zz.DisplayObject.prototype.render.call(this);
+                    for (var i = 0, len = this.numChildren; i < len; i++) {
+                        if (this.children[i]) {
+                            this.children[i].render();
+                        }
                     }
                 }
             },
@@ -971,9 +973,31 @@ var zz = new function() {
             this._green = 100;
             this._blue = 100;
             this._canvasDirty = true;
+
+            this.addEventListener(Sprite.RENDER, function() {
+                if (this.loaded) {
+                    this.context.clearRect(0, 0, this._clearWidth, this._clearHeight);
+                    this._clearWidth = this._width;
+                    this._clearHeight = this._height;
+                    if (this.imageData) {
+                        this.context.putImageData(this.imageData, 0, 0);
+                    } else {
+                        this.context.drawImage(this.img, this.tx, this.ty, this.tw, this.th, 0, 0, this._width, this._height);
+                    }
+                }
+            });
         }
 
+        Sprite.RENDER = "__zz_sprite_render__";
+
         Sprite.prototype = createClass(DisplayObjectContainer, {
+            onEnterFrame: function() {
+                _zz.DisplayObjectContainer.prototype.onEnterFrame.call(this);
+                if (this._canvasDirty) {
+                    this.dispatchEvent(Sprite.RENDER);
+                    this._canvasDirty = false;
+                }
+            },
             tx: {
                 get: function() {
                     return this._tx;
@@ -1045,35 +1069,44 @@ var zz = new function() {
              * @param {Int} th
              */
             trimming: function(tx, ty, tw, th) {
-                if (tx < 0) {
-                    tx = 0;
-                } else if (this.loaded && tx > this.img.width) {
-                    tx = this.img.width;
-                }
+                function trim() {
+                    this.removeEventListener(Event.COMPLETE, trim);
+                    if (tx < 0) {
+                        tx = 0;
+                    } else if (this.loaded && tx > this.img.width) {
+                        tx = this.img.width;
+                    }
 
-                this.tx = tx;
-                if (ty < 0) {
-                    ty = 0;
-                } else if (this.loaded && ty > this.img.height) {
-                    ty = this.img.height;
-                }
-                this.ty = ty;
+                    this.tx = tx;
+                    if (ty < 0) {
+                        ty = 0;
+                    } else if (this.loaded && ty > this.img.height) {
+                        ty = this.img.height;
+                    }
+                    this.ty = ty;
 
-                if (tw <= 0) {
-                    tw = 1;
-                } else if (tw > this.img.width) {
-                    tw = this.img.width;
-                }
-                this.tw = tw;
+                    if (tw <= 0) {
+                        tw = 1;
+                    } else if (tw > this.img.width) {
+                        tw = this.img.width;
+                    }
+                    this.tw = tw;
 
-                if (th <= 0) {
-                    th = 1;
-                } else if (th > this.img.height) {
-                    th = this.img.height;
+                    if (th <= 0) {
+                        th = 1;
+                    } else if (th > this.img.height) {
+                        th = this.img.height;
+                    }
+                    this.th = th;
                 }
-                this.th = th;
+                if (this.loaded) {
+                    trim.call(this);
+                } else {
+                    this.addEventListener(Event.COMPLETE, trim);
+                }
             },
             loadImage: function(src) {
+                this.loaded = false;
                 var self = this;
                 this.img = _zz.loadImage(src, function(event) {
                     self.tw = self._clearWidth = self.canvas.width = self.width = self.img.width;
@@ -1081,6 +1114,7 @@ var zz = new function() {
                     self.referencePoint = self._reference;
                     self.trimming(self.tx, self.ty, self.tw, self.th);
                     self.loaded = true;
+                    self._canvasDirty = true;
                     self.dispatchEvent(new Event(Event.COMPLETE));
                 });
             },
@@ -1173,22 +1207,6 @@ var zz = new function() {
                     }
                     this.setImageData();
                 }
-            },
-            render: function() {
-                if (this.loaded) {
-                    if (this._canvasDirty) {
-                        this.context.clearRect(0, 0, this._clearWidth, this._clearHeight);
-                        this._clearWidth = this._width;
-                        this._clearHeight = this._height;
-                        if (this.imageData) {
-                            this.context.putImageData(this.imageData, 0, 0);
-                        } else {
-                            this.context.drawImage(this.img, this.tx, this.ty, this.tw, this.th, 0, 0, this._width, this._height);
-                        }
-                        this._canvasDirty = false;
-                    }
-                }
-                _zz.DisplayObjectContainer.prototype.render.call(this);
             },
             getImageData: function() {
                 if (this._originalImageData === null) {
@@ -1373,7 +1391,7 @@ var zz = new function() {
             },
             onEnterFrame: function() {
                 this.applyFrame(this.currentFrame);
-                _zz.DisplayObjectContainer.prototype.onEnterFrame.call(this);
+                _zz.Sprite.prototype.onEnterFrame.call(this);
                 if (this.playing) {
                     ++this.currentFrame;
                     if (this.currentFrame >= this.frames.length) {
