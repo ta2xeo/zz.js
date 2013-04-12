@@ -394,7 +394,7 @@ var zz = new function() {
                 this.style[PREFIX + "Transform"] = [
                     "translate(" + this._x + "px," + this._y + "px)",
                     "rotate(" + this.rotation + "deg)",
-                    "scale(" + this.scaleX + "," + this.scaleY + ")"
+                    "scale(" + (this.inversion ? -this.scaleX : this.scaleX) + "," + this.scaleY + ")"
                 ].join(" ");
             },
             setPosition: function(x, y) {
@@ -579,30 +579,6 @@ var zz = new function() {
                     return this._inversion;
                 },
                 set: function(invert) {
-                    function normal() {
-                        this.style[PREFIX + "Transform"] = [
-                            "translate(" + this._x + "px," + this._y + "px)",
-                            "rotate(" + this.rotation + "deg)",
-                            "scale(" + this.scaleX + "," + this.scaleY + ")"
-                        ].join(" ");
-                    }
-                    function reverse() {
-                        this.style[PREFIX + "Transform"] = [
-                            "translate(" + this._x + "px," + this._y + "px)",
-                            "rotate(" + this.rotation + "deg)",
-                            "scale(" + -this.scaleX + "," + this.scaleY + ")"
-                        ].join(" ");
-                    }
-                    var descriptor = {
-                        writable: true,
-                        enumerable: true
-                    };
-                    if (invert) {
-                        descriptor.value = reverse;
-                    } else {
-                        descriptor.value = normal;
-                    }
-                    Object.defineProperty(DisplayObject.prototype, "transform", descriptor);
                     this._inversion = invert;
                     this.referencePoint = this.referencePoint;
                     this._dirty = true;
