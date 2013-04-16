@@ -389,9 +389,19 @@ var zz = new function() {
             }
         }
 
+        var div = document.createElement("div");
+        var transforms = ["transform", PREFIX + "Transform"];
+        var CSS_TRANSFORM;
+        for (var i = 0; i < transforms.length; i++) {
+            if (transforms[i] in div.style) {
+                CSS_TRANSFORM = transforms[i];
+                break;
+            }
+        }
+
         DisplayObject.prototype = createClass(EventDispatcher, {
             transform: function() {
-                this.style[PREFIX + "Transform"] = [
+                this.style[CSS_TRANSFORM] = [
                     "translate(" + this._x + "px," + this._y + "px)",
                     "rotate(" + this.rotation + "deg)",
                     "scale(" + (this.inversion ? -this.scaleX : this.scaleX) + "," + this.scaleY + ")"
