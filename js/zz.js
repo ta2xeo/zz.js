@@ -354,6 +354,7 @@ var zz = new function() {
             this.referencePoint = ReferencePoint.LEFT | ReferencePoint.TOP;
             this._dirty = false;
             this.enabled = true;
+            this._removed = false;
             var self = this;
 
             for (var eventName in TouchEvent) {
@@ -803,27 +804,18 @@ var zz = new function() {
             onEnterFrame: function() {
                 _zz.DisplayObject.prototype.onEnterFrame.apply(this);
 
-                // This object is already removed.
+                // This container is already removed.
                 if (this._removed) {
                     return;
                 }
 
-                for (var i = 0, len = this.numChildren; i < len; i++) {
-                    if (this.children[i]) {
-                        this.children[i].onEnterFrame();
+                var copy = this.children.slice(0);
+                for (var i = 0, len = copy.length; i < len; i++) {
+                    if (!copy[i]._removed) {
+                        copy[i].onEnterFrame();
                     }
                 }
-                var children = this.children;
-                function packChildren(index) {
-                    if (index < children.length) {
-                        if (!children[index]) {
-                            children.splice(index, 1);
-                        }
-                        ++index;
-                        packChildren(index);
-                    }
-                }
-                packChildren(0);
+                copy = null;
             },
             numChildren: {
                 get: function() {
@@ -917,6 +909,7 @@ var zz = new function() {
             removeSelf: function() {
                 this.pause();
                 this.element.parentNode.removeChild(this.element);
+                _zz.DisplayObjectContainer.prototype.removeSelf.call(this);
             },
             displayState: {
                 set: function(state) {
