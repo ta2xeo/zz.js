@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.2.8
+ * @version       0.2.9
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -31,8 +31,10 @@ var zz = new function() {
         (function() {
             var prev = performance.now();
             return function(callback) {
-                var elapsed = performance.now() - prev;
-                return setTimeout(callback, Math.max(1, 1000 / this.frameRate - elapsed << 0));
+                var now = prev = performance.now();
+                var elapsed = now - prev;
+                var delay = Math.max(1, 1000 / 60 - elapsed << 0);
+                return setTimeout(callback, delay);
             };
         }());
 
@@ -635,7 +637,18 @@ var zz = new function() {
                 }
             },
             removeSelf: function() {
-                this.parent.removeChild(this);
+                this._removed = true;
+                for (var eventName in TouchEvent) {
+                    this.element["on" + TouchEvent[eventName]] = null;
+                }
+                if (this.parent) {
+                    this.parent.element.removeChild(this.element);
+                    this.parent.children.splice(this.parent.getChildIndex(this), 1);
+                    this.parent = null;
+                }
+                this.element = null;
+                this.cleanEventListener();
+                this.style = null;
             }
         });
         return DisplayObject;
@@ -690,14 +703,18 @@ var zz = new function() {
             removeChild: function(child) {
                 for (var i = 0, len = this.numChildren; i < len; i++) {
                     if (this.children[i] == child) {
-                        child.cleanEventListener();
-                        this.element.removeChild(child.element);
-                        delete this.children[i];
+                        this.removeChildAt(i);
                         break;
                     }
                 }
-                if (this.children.length === 0) {
-                    this.children = [];
+            },
+            /**
+             * @param {Int} index
+             */
+            removeChildAt: function(index) {
+                var child = this.getChildAt(index);
+                if (child) {
+                    child.removeSelf();
                 }
             },
             /**
@@ -785,6 +802,12 @@ var zz = new function() {
             },
             onEnterFrame: function() {
                 _zz.DisplayObject.prototype.onEnterFrame.apply(this);
+
+                // This object is already removed.
+                if (this._removed) {
+                    return;
+                }
+
                 for (var i = 0, len = this.numChildren; i < len; i++) {
                     if (this.children[i]) {
                         this.children[i].onEnterFrame();
@@ -806,6 +829,14 @@ var zz = new function() {
                 get: function() {
                     return this.children.length;
                 }
+            },
+            removeSelf: function() {
+                while (this.getChildAt(0)) {
+                    this.removeChildAt(0);
+                }
+                _zz.DisplayObject.prototype.removeSelf.call(this);
+                this.children = null;
+                this.nameMap = null;
             }
         });
         return DisplayObjectContainer;
@@ -841,7 +872,7 @@ var zz = new function() {
             this._height = parseInt(this.style.height, 10);
             this.handle = null;
             this.start();
-            this.renderLoop();
+            // this.renderLoop();
         }
         Stage.prototype = createClass(DisplayObjectContainer, {
             onEnterFrame: function() {
@@ -977,6 +1008,15 @@ var zz = new function() {
         Sprite.RENDER = "__zz_sprite_render__";
 
         Sprite.prototype = createClass(DisplayObjectContainer, {
+            removeSelf: function() {
+                this.element.removeChild(this.canvas);
+                this.canvas = null;
+                this.context = null;
+                this.img = null;
+                this.imageData = null;
+                this._originalImageData = null;
+                _zz.DisplayObjectContainer.prototype.removeSelf.call(this);
+            },
             onEnterFrame: function() {
                 _zz.DisplayObjectContainer.prototype.onEnterFrame.call(this);
                 if (this._canvasDirty) {
