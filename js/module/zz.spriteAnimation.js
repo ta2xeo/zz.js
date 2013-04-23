@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.5
+ * @version       0.0.6
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -50,10 +50,9 @@ zz.spriteAnimation = new function() {
                         self.gotoAndPlay(self.currentFrame);
                     } else {
                         var first = self.sprites[0];
-                        if (first) {
-                            self.setSize(first.width, first.height);
-                        }
+                        self.setSpriteSize(first);
                     }
+                    self.spriteLoaded = true;
                     self.dispatchEvent(SpriteEvent.LOAD_SPRITES);
                 }
                 spr.removeEventListener(zz.Event.COMPLETE, comp);
@@ -87,7 +86,7 @@ zz.spriteAnimation = new function() {
                 for (var i = 0, len = this.numChildren; i < len; i++) {
                     if (index === i) {
                         var c = this.getChildAt(i);
-                        this.setSize(c.width, c.height);
+                        this.setSpriteSize(c);
                         c.visible = true;
                     } else {
                         this.getChildAt(i).visible = false;
@@ -108,6 +107,11 @@ zz.spriteAnimation = new function() {
                 this.setFrame(frame);
             } else {
                 throw new zz.ZZError("sprites are not loaded yet.");
+            }
+        },
+        setSpriteSize: function(sprite) {
+            if (sprite) {
+                zz.MovieClip.prototype.setSize.call(this, sprite.width, sprite.height);
             }
         },
         /**
@@ -240,6 +244,11 @@ zz.spriteAnimation = new function() {
                 timeLine += interval;
             }
             return anim;
+        },
+        setSpriteSize: function(sprite) {
+            if (sprite) {
+                zz.MovieClip.prototype.setSize.call(this, this.chipWidth, this.chipHeight);
+            }
         }
     });
 

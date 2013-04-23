@@ -566,6 +566,9 @@ var zz = new function() {
                     return this._visible;
                 },
                 set: function(visible) {
+                    if (visible == this._visible) {
+                        return;
+                    }
                     this._visible = visible;
                     var self = this;
                     function display() {
