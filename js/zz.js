@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.2.9
+ * @version       0.3.0
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -270,17 +270,28 @@ var zz = new function() {
                 var len = this.eventContainer[eventName].length;
                 for (var i = 0; i < len; i++) {
                     if (listener == this.eventContainer[eventName][i]) {
-                        // console.log(eventName);
                         this.eventContainer[eventName].splice(i, 1);
+                        if (this.eventContainer[eventName].length === 0) {
+                            delete this.eventContainer[eventName];
+                        }
                         return;
                     }
                 }
             },
             cleanEventListener: function(eventName) {
+                function clear(eventName) {
+                    var len = this.eventContainer[eventName].length;
+                    for (var i = 0; i < len; i++) {
+                        var listener = this.eventContainer[eventName][i];
+                        this.removeEventListener(eventName, listener);
+                    }
+                }
                 if (eventName) {
-                    delete this.eventContainer[eventName];
+                    clear.call(this, eventName);
                 } else {
-                    this.eventContainer = {};
+                    for (var key in this.eventContainer) {
+                        clear.call(this, key);
+                    }
                 }
             },
             /**
@@ -305,14 +316,12 @@ var zz = new function() {
                 if (!this.eventContainer[eventName]) {
                     return result;
                 }
-                var len = this.eventContainer[eventName].length;
-                for (var i = 0; i < len ; i++) {
-                    if (this.eventContainer[eventName][i] == undefined) {
-                        result |= this.eventContainer[eventName].splice(i, 1);
-                    } else {
-                        result |= this.eventContainer[eventName][i].call(this, obj);
-                    }
+
+                var copy = this.eventContainer[eventName].slice(0);
+                for (var i = 0, len = copy.length; i < len; i++) {
+                    result |= copy[i].call(this, obj);
                 }
+                copy = null;
                 return result;
             }
         };
@@ -1134,8 +1143,8 @@ var zz = new function() {
                     self.tw = self._clearWidth = self.canvas.width = self.width = self.img.width;
                     self.th = self._clearHeight = self.canvas.height = self.height = self.img.height;
                     self.referencePoint = self._reference;
-                    self.trimming(self.tx, self.ty, self.tw, self.th);
                     self.loaded = true;
+                    self.trimming(self.tx, self.ty, self.tw, self.th);
                     self._canvasDirty = true;
                     self.dispatchEvent(new Event(Event.COMPLETE));
                 });
