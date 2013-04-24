@@ -432,6 +432,9 @@ var zz = new function() {
                 this.setSize(width, height);
             },
             onEnterFrame: function() {
+                if (this._removed) {
+                    return;
+                }
                 this.dispatchEvent(Event.ENTER_FRAME);
                 if (this._dirty) {
                     this.transform();
