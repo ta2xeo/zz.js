@@ -107,7 +107,7 @@ var zz = new function() {
         }[engine];
         var transforms = ["transform", prefix + "Transform"];
         var css_transform;
-        for (var i = 0; i < transforms.length; i++) {
+        for (var i = 0, len = transforms.length; i < len; i++) {
             if (transforms[i] in div.style) {
                 css_transform = transforms[i];
                 break;
