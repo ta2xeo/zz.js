@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.6
+ * @version       0.0.7
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -99,14 +99,18 @@ zz.spriteAnimation = new function() {
          * @param {Int} index 0から始まる
          */
         setSpriteByIndex: function(index) {
-            if (this.spritesIndices) {
+            function setFrame() {
+                this.removeEventListener(SpriteEvent.LOAD_SPRITES, setFrame);
                 var frame = this.spritesIndices[index];
                 if (!frame) {
                     throw new zz.ZZError("invalid index.");
                 }
                 this.setFrame(frame);
+            }
+            if (this.spritesIndices) {
+                setFrame.call(this);
             } else {
-                throw new zz.ZZError("sprites are not loaded yet.");
+                this.addEventListener(SpriteEvent.LOAD_SPRITES, setFrame);
             }
         },
         setSpriteSize: function(sprite) {
@@ -178,6 +182,7 @@ zz.spriteAnimation = new function() {
      */
     function SpriteSheetAnimation() {
         SpriteAnimation.apply(this);
+        this.selectedSprites = null;
     }
     SpriteSheetAnimation.prototype = zz.createClass(SpriteAnimation, {
         /**
@@ -212,18 +217,22 @@ zz.spriteAnimation = new function() {
             var _anim = {};
             var _timeLine = 1;
             var spr = this.sprites[0];
-            var w_cnt = spr.width / this.chipWidth;
-            var h_cnt = spr.height / this.chipHeight;
+            var w_cnt = spr.width / this.chipWidth << 0;
+            var h_cnt = spr.height / this.chipHeight << 0;
+            var index = 0;
             for (var i = 0; i < h_cnt; i++) {
                 for (var j = 0; j < w_cnt; j++) {
-                    _anim[_timeLine] = {
-                        tx: j * this.chipWidth,
-                        ty: i * this.chipHeight,
-                        tw: this.chipWidth,
-                        th: this.chipHeight,
-                        stop: true
-                    };
-                    ++_timeLine;
+                    if (this.selectedSprites === null || index in this.selectedSprites) {
+                        _anim[_timeLine] = {
+                            tx: j * this.chipWidth,
+                            ty: i * this.chipHeight,
+                            tw: this.chipWidth,
+                            th: this.chipHeight,
+                            stop: true
+                        };
+                        ++_timeLine;
+                    }
+                    ++index;
                 }
             }
             spr.setAnimation(_anim);
@@ -244,6 +253,15 @@ zz.spriteAnimation = new function() {
                 timeLine += interval;
             }
             return anim;
+        },
+        /**
+         * @param {Array of Int} selectSprites zero origin
+         */
+        selectSprites: function(selectSprites) {
+            this.selectedSprites = {};
+            for (var i = 0, len = selectSprites.length; i < len; i++) {
+                this.selectedSprites[selectSprites[i]] = 1;
+            }
         },
         setSpriteSize: function(sprite) {
             if (sprite) {
