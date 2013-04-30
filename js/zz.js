@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.0
+ * @version       0.3.1
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -67,7 +67,7 @@ var zz = new function() {
                 }
             },
             {
-                pattern: /Android (\d+\.\d+)\.\d+; ?([a-z]{2}-[a-z]{2}|);? ?(\S+) /,
+                pattern: /Android (\d+\.\d+)[^;]*; ?([a-z]{2}-[a-z]{2}|);? ?(\S+) /,
                 os: "Android",
                 model: function(match) {
                     return match[3];
@@ -100,21 +100,32 @@ var zz = new function() {
         var div = document.createElement("div");
         div.setAttribute("ontouchstart", "return");
 
+        var prefix = {
+            Webkit: "webkit",
+            Gecko: "Moz",
+            NoSupport: ""
+        }[engine];
+        var transforms = ["transform", prefix + "Transform"];
+        var css_transform;
+        for (var i = 0; i < transforms.length; i++) {
+            if (transforms[i] in div.style) {
+                css_transform = transforms[i];
+                break;
+            }
+        }
+
         var env = {
             USER_AGENT: ua,
             RENDERING_ENGINE: engine,
-            VENDOR_PREFIX: {
-                Webkit: "webkit",
-                Gecko: "Moz",
-                NoSupport: ""
-            }[engine],
+            VENDOR_PREFIX: prefix,
             OS: "Unknown",
             MODEL: "Unknown",
             VERSION: 0,
-            TOUCH_ENABLED: typeof div.ontouchstart === "function"
+            TOUCH_ENABLED: typeof div.ontouchstart === "function",
+            CSS_TRANSFORM: css_transform
         };
 
-        for (var i = 0, len = devices.length; i < len; i++) {
+        for (i = 0, len = devices.length; i < len; i++) {
             var device = devices[i];
             var match = ua.match(device.pattern);
             if (match) {
@@ -124,7 +135,6 @@ var zz = new function() {
                 return env;
             }
         }
-        alert("Browser not supported.");
         return env;
     })();
 
@@ -401,19 +411,10 @@ var zz = new function() {
             }
         }
 
-        var div = document.createElement("div");
-        var transforms = ["transform", PREFIX + "Transform"];
-        var CSS_TRANSFORM;
-        for (var i = 0; i < transforms.length; i++) {
-            if (transforms[i] in div.style) {
-                CSS_TRANSFORM = transforms[i];
-                break;
-            }
-        }
-
+        var css_transform = ENV.CSS_TRANSFORM;
         DisplayObject.prototype = createClass(EventDispatcher, {
             transform: function() {
-                this.style[CSS_TRANSFORM] = [
+                this.style[css_transform] = [
                     "translate(" + this._x + "px," + this._y + "px)",
                     "rotate(" + this.rotation + "deg)",
                     "scale(" + (this.inversion ? -this.scaleX : this.scaleX) + "," + this.scaleY + ")"
