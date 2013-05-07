@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.1
+ * @version       0.3.2
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -374,6 +374,7 @@ var zz = new function() {
             this._dirty = false;
             this.enabled = true;
             this._removed = false;
+            this._execution = false;
             var self = this;
 
             for (var eventName in TouchEvent) {
@@ -432,6 +433,22 @@ var zz = new function() {
                 this.setPosition(x, y);
                 this.setSize(width, height);
             },
+            addEventListener: function(eventName, listener) {
+                EventDispatcher.prototype.addEventListener.apply(this, arguments);
+                this._execute();
+            },
+            _execute: function() {
+                function propagate(parent) {
+                    if (parent) {
+                        if (!parent._execution) {
+                            parent._execution = true;
+                            propagate(parent.parent);
+                        }
+                    }
+                }
+                this._execution = true;
+                propagate(this.parent);
+            },
             onEnterFrame: function() {
                 if (this._removed) {
                     return;
@@ -440,6 +457,10 @@ var zz = new function() {
                 if (this._dirty) {
                     this.transform();
                     this._dirty = false;
+                }
+                this._execution = false;
+                if (Event.ENTER_FRAME in this.eventContainer) {
+                    this._execute();
                 }
             },
             globalToLocal: function(globalX, globalY) {
@@ -460,6 +481,17 @@ var zz = new function() {
                 };
             },
             render: function() {
+            },
+            _dirty: {
+                get: function() {
+                    return this.__dirty;
+                },
+                set: function(dirty) {
+                    if (dirty && !this._execution) {
+                        this._execute();
+                    }
+                    this.__dirty = dirty;
+                }
             },
             name: {
                 get: function() {
@@ -713,6 +745,7 @@ var zz = new function() {
                     }
                     this.nameMap[child.name] = child;
                 }
+                this._execute();
             },
             /**
              * @param {DisplayObject}
@@ -818,6 +851,9 @@ var zz = new function() {
                 }
             },
             onEnterFrame: function() {
+                if (!this._execution) {
+                    return;
+                }
                 _zz.DisplayObject.prototype.onEnterFrame.apply(this);
 
                 // This container is already removed.
@@ -827,8 +863,9 @@ var zz = new function() {
 
                 var copy = this.children.slice(0);
                 for (var i = 0, len = copy.length; i < len; i++) {
-                    if (!copy[i]._removed) {
-                        copy[i].onEnterFrame();
+                    var c = copy[i];
+                    if (!c._removed && c._execution) {
+                        c.onEnterFrame();
                     }
                 }
                 copy = null;
@@ -1097,6 +1134,17 @@ var zz = new function() {
                     this.canvas.height = height;
                 }
             },
+            _canvasDirty: {
+                get: function() {
+                    return this.__canvasDirty;
+                },
+                set: function(dirty) {
+                    if (dirty && !this._execution) {
+                        this._execute();
+                    }
+                    this.__canvasDirty = dirty;
+                }
+            },
             /**
              * @param {Int} tx
              * @param {Int} ty
@@ -1348,6 +1396,17 @@ var zz = new function() {
                 for (var i = 0, len = tweenIndexes.length; i < len; i++) {
                     var index = tweenIndexes[i];
                     supplement.call(this, index);
+                }
+            },
+            _mcDirty: {
+                get: function() {
+                    return this.__mcDirty;
+                },
+                set: function(dirty) {
+                    if (dirty && !this._execution) {
+                        this._execute();
+                    }
+                    this.__mcDirty = dirty;
                 }
             },
             play: function() {
