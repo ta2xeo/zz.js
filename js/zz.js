@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.2
+ * @version       0.3.3
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -434,26 +434,22 @@ var zz = new function() {
                 this.setSize(width, height);
             },
             addEventListener: function(eventName, listener) {
-                EventDispatcher.prototype.addEventListener.apply(this, arguments);
-                this._execute();
+                _zz.EventDispatcher.prototype.addEventListener.apply(this, arguments);
+                if (eventName == Event.ENTER_FRAME) {
+                    this._execute();
+                }
             },
             _execute: function() {
-                function propagate(parent) {
-                    if (parent) {
-                        if (!parent._execution) {
-                            parent._execution = true;
-                            propagate(parent.parent);
-                        }
-                    }
-                }
                 this._execution = true;
-                propagate(this.parent);
+                if (this.parent && !this.parent._execution) {
+                    this.parent._execute();
+                }
             },
             onEnterFrame: function() {
+                this.dispatchEvent(Event.ENTER_FRAME);
                 if (this._removed) {
                     return;
                 }
-                this.dispatchEvent(Event.ENTER_FRAME);
                 if (this._dirty) {
                     this.transform();
                     this._dirty = false;
@@ -892,6 +888,8 @@ var zz = new function() {
      * @extends DisplayObjectContainer
      */
     var Stage = new function() {
+        var executing = false;
+
         /**
          * @param {String} stageId
          */
@@ -921,17 +919,29 @@ var zz = new function() {
         }
         Stage.prototype = createClass(DisplayObjectContainer, {
             onEnterFrame: function() {
+                executing = true;
                 var prev = performance.now();
                 _zz.DisplayObjectContainer.prototype.onEnterFrame.call(this);
                 var elapsed = performance.now() - prev;
                 var wait = Math.max(1, 1000 / this.frameRate - elapsed << 0);
-                var self = this;
-                if (!this._pause) {
-                    this.handle = setTimeout(function() {
-                        self.onEnterFrame();
-                    }, wait);
+                if (!this._pause && this._execution) {
+                    this.setOnEnterFrame(wait);
                 } else {
                     this.handle = null;
+                }
+                executing = false;
+            },
+            setOnEnterFrame: function(waitTime) {
+                var self = this;
+                this.handle = setTimeout(function() {
+                    self.onEnterFrame();
+                }, waitTime);
+            },
+            _execute: function() {
+                _zz.DisplayObjectContainer.prototype._execute.call(this);
+                if (!executing && !this.running && !this._pause) {
+                    var wait = Math.max(1, 1000 / this.frameRate << 0);
+                    this.setOnEnterFrame(wait);
                 }
             },
             renderLoop: function() {
