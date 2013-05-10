@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.2
+ * @version       0.0.3
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 
@@ -144,26 +144,4 @@ function Button(stateImages) {
     }
     button.enable();
     return button;
-}
-
-function FPS() {
-    var t = new zz.TextField();
-    var cnt = 0;
-    var before = 0;
-    var after = 0;
-    t.px = 16;
-    t.textColor = "#fff";
-    t.style.textShadow = "#363636 0px -1px 3px, #363636 1px 0px 3px, #363636 0px 1px 3px, #363636 -1px 0px 3px";
-    function measure() {
-        ++cnt;
-        var d = new Date();
-        after = d.getSeconds();
-        if (before != after) {
-            before = after;
-            t.text = cnt;
-            cnt = 0;
-        }
-    }
-    t.addEventListener(Event.ENTER_FRAME, measure);
-    return t;
 }

@@ -624,11 +624,13 @@ zz.debug = new function() {
     function setSelectLine(obj) {
         if (selected) {
             (function clearAllOutline(target) {
-                target.style.outline = "";
-                if (target instanceof zz.DisplayObjectContainer) {
-                    for (var i = 0, len = target.numChildren; i < len; i++) {
-                        var c = target.getChildAt(i);
-                        clearAllOutline(c);
+                if (target && target.style) {
+                    target.style.outline = "";
+                    if (target instanceof zz.DisplayObjectContainer) {
+                        for (var i = 0, len = target.numChildren; i < len; i++) {
+                            var c = target.getChildAt(i);
+                            clearAllOutline(c);
+                        }
                     }
                 }
             })(selected);
@@ -855,7 +857,9 @@ zz.debug = new function() {
             });
 
             // 表示ウィンドウ
-            var stageWindow = getStageWindow(this);
+            if (attachStage === null) {
+                var stageWindow = getStageWindow(this);
+            }
         }).call(this);
     }
     debugStage.prototype = zz.createClass(debugStage, {

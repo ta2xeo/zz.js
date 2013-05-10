@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.3
+ * @version       0.3.4
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -197,8 +197,8 @@ var zz = new function() {
          * event type
          */
         var define = {
-            ENTER_FRAME: "__enter_frame__",
-            COMPLETE: "__complete__"
+            ENTER_FRAME: "__zz_enter_frame__",
+            COMPLETE: "__zz_complete__"
         };
 
         /**
@@ -357,6 +357,9 @@ var zz = new function() {
             this.style[PREFIX + "TapHighlightColor"] = "rgba(0,0,0,0)";
             this.style[PREFIX + "TouchCallout"] = "none";
             this.style[PREFIX + "UserSelect"] = "none";
+            if (ENV.OS == "iOS" || ENV.OS == "Android" && ENV.VERSION === 4.1) {
+                this.style[PREFIX + "BackfaceVisibility"] = "hidden";
+            }
             this.style.textAlign = "left";
             this.name = "";
             this.parent = null;
@@ -437,6 +440,11 @@ var zz = new function() {
                 _zz.EventDispatcher.prototype.addEventListener.apply(this, arguments);
                 if (eventName == Event.ENTER_FRAME) {
                     this._execute();
+                }
+            },
+            dispatchEvent: function(event) {
+                if (!this._removed) {
+                    _zz.EventDispatcher.prototype.dispatchEvent.apply(this, arguments);
                 }
             },
             _execute: function() {
@@ -1059,6 +1067,15 @@ var zz = new function() {
                     }
                 }
             });
+
+            this.addEventListener(Event.COMPLETE, function() {
+                this.tw = this._clearWidth = this.canvas.width = this.width = this.img.width;
+                this.th = this._clearHeight = this.canvas.height = this.height = this.img.height;
+                this.referencePoint = this._reference;
+                this.loaded = true;
+                this.trimming(this.tx, this.ty, this.tw, this.th);
+                this._canvasDirty = true;
+            });
         }
 
         Sprite.RENDER = "__zz_sprite_render__";
@@ -1202,12 +1219,6 @@ var zz = new function() {
                 this.loaded = false;
                 var self = this;
                 this.img = _zz.loadImage(src, function(event) {
-                    self.tw = self._clearWidth = self.canvas.width = self.width = self.img.width;
-                    self.th = self._clearHeight = self.canvas.height = self.height = self.img.height;
-                    self.referencePoint = self._reference;
-                    self.loaded = true;
-                    self.trimming(self.tx, self.ty, self.tw, self.th);
-                    self._canvasDirty = true;
                     self.dispatchEvent(new Event(Event.COMPLETE));
                 });
             },
@@ -1644,18 +1655,25 @@ var zz = new function() {
         /**
          * preload image files.
          * @param {String[]} assets
+         * @param {Function} complete
          * @param {Function} callback
          */
-        preload: function(assets, callback) {
+        preload: function(assets, complete, callback) {
             if (!(assets instanceof Array)) {
                 throw new ZZError("assets must be array.");
             }
             var assetsCount = assets.length;
             function checkLoad() {
                 --assetsCount;
+                if (typeof callback == "function") {
+                    var len = assets.length;
+                    var loaded = len - assetsCount;
+                    var percent = loaded * 100 / len;
+                    callback(percent, loaded, len);
+                }
                 if (assetsCount === 0) {
-                    if (typeof callback == "function") {
-                        callback();
+                    if (typeof complete == "function") {
+                        complete();
                     }
                 }
             }
@@ -1671,11 +1689,16 @@ var zz = new function() {
             }
             var img = new Image();
             img.src = src;
-            var retry = DEFAULT_RETRY_COUNT;
+            var retryLimit = DEFAULT_RETRY_COUNT;
+            var retryCount = 0;
 
             img.onerror = function(event) {
-                if (retry--) {
-                    img.src = src;
+                if (retryCount < retryLimit) {
+                    var delay = retryCount * 1000 || 500;
+                    ++retryCount;
+                    setTimeout(function() {
+                        img.src = src;
+                    }, delay);
                 } else {
                     throw new ZZError('Could not load image files: ' + src);
                 }
