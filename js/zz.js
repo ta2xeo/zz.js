@@ -444,7 +444,7 @@ var zz = new function() {
             },
             dispatchEvent: function(event) {
                 if (!this._removed) {
-                    _zz.EventDispatcher.prototype.dispatchEvent.apply(this, arguments);
+                    return _zz.EventDispatcher.prototype.dispatchEvent.apply(this, arguments);
                 }
             },
             _execute: function() {
