@@ -357,7 +357,7 @@ var zz = new function() {
             this.style[PREFIX + "TapHighlightColor"] = "rgba(0,0,0,0)";
             this.style[PREFIX + "TouchCallout"] = "none";
             this.style[PREFIX + "UserSelect"] = "none";
-            if (ENV.OS == "iOS" || ENV.OS == "Android" && ENV.VERSION === 4.1) {
+            if (ENV.OS == "Android" && ENV.VERSION >= 4.1) {
                 this.style[PREFIX + "BackfaceVisibility"] = "hidden";
             }
             this.style.textAlign = "left";
