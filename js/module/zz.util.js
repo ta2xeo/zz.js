@@ -40,6 +40,9 @@ zz.util = new function() {
                 }
             }
             exec(this);
+        },
+        suspend: function() {
+            this._running = false;
         }
     });
 
@@ -122,6 +125,9 @@ zz.util = new function() {
                 var index = this.queues.length - 1;
                 var queue = this.queues[index];
                 function set(queue, asset) {
+                    if (!asset) {
+                        return;
+                    }
                     if (!(asset in this.stored)) {
                         this.stored[asset] = 1;
                         queue.push(asset);

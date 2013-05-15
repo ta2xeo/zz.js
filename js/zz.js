@@ -1073,7 +1073,6 @@ var zz = new function() {
                 this.th = this._clearHeight = this.canvas.height = this.height = this.img.height;
                 this.referencePoint = this._reference;
                 this.loaded = true;
-                this.trimming(this.tx, this.ty, this.tw, this.th);
                 this._canvasDirty = true;
             });
         }
@@ -1208,6 +1207,7 @@ var zz = new function() {
                         th = this.img.height;
                     }
                     this.th = th;
+                    this.referencePoint = this._reference;
                 }
                 if (this.loaded) {
                     trim.call(this);
