@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.4
+ * @version       0.3.5
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -377,6 +377,7 @@ var zz = new function() {
             this._dirty = false;
             this.enabled = true;
             this._removed = false;
+            this._deleted = false;
             this._execution = false;
             var self = this;
 
@@ -443,7 +444,7 @@ var zz = new function() {
                 }
             },
             dispatchEvent: function(event) {
-                if (!this._removed) {
+                if (!this._deleted) {
                     return _zz.EventDispatcher.prototype.dispatchEvent.apply(this, arguments);
                 }
             },
@@ -455,7 +456,7 @@ var zz = new function() {
             },
             onEnterFrame: function() {
                 this.dispatchEvent(Event.ENTER_FRAME);
-                if (this._removed) {
+                if (this._deleted) {
                     return;
                 }
                 if (this._dirty) {
@@ -691,13 +692,17 @@ var zz = new function() {
             },
             removeSelf: function() {
                 this._removed = true;
-                for (var eventName in TouchEvent) {
-                    this.element["on" + TouchEvent[eventName]] = null;
-                }
                 if (this.parent) {
                     this.parent.element.removeChild(this.element);
                     this.parent.children.splice(this.parent.getChildIndex(this), 1);
                     this.parent = null;
+                }
+            },
+            discard: function() {
+                this.removeSelf();
+                this._deleted = true;
+                for (var eventName in TouchEvent) {
+                    this.element["on" + TouchEvent[eventName]] = null;
                 }
                 this.element = null;
                 this.cleanEventListener();
@@ -735,6 +740,10 @@ var zz = new function() {
                 if (child instanceof _zz.DisplayObject === false) {
                     throw new ZZError(Object.prototype.toString(child) + " is not DisplayObject.");
                 }
+                if (child.parent) {
+                    throw new ZZError(Object.prototype.toString(child) + " is already child.");
+                }
+                child._removed = false;
                 child.parent = this;
                 if (index < this.numChildren) {
                     this.element.insertBefore(child.element, this.children[index].element);
@@ -860,8 +869,8 @@ var zz = new function() {
                 }
                 _zz.DisplayObject.prototype.onEnterFrame.apply(this);
 
-                // This container is already removed.
-                if (this._removed) {
+                // This container is already deleted.
+                if (this._deleted) {
                     return;
                 }
 
@@ -879,11 +888,11 @@ var zz = new function() {
                     return this.children.length;
                 }
             },
-            removeSelf: function() {
-                while (this.getChildAt(0)) {
-                    this.removeChildAt(0);
+            discard: function() {
+                while (this.numChildren > 0) {
+                    this.getChildAt(0).discard();
                 }
-                _zz.DisplayObject.prototype.removeSelf.call(this);
+                _zz.DisplayObject.prototype.discard.call(this);
                 this.children = null;
                 this.nameMap = null;
             }
@@ -978,9 +987,12 @@ var zz = new function() {
                 }
             },
             removeSelf: function() {
-                this.pause();
                 this.element.parentNode.removeChild(this.element);
                 _zz.DisplayObjectContainer.prototype.removeSelf.call(this);
+            },
+            discard: function() {
+                this.pause();
+                _zz.DisplayObjectContainer.prototype.discard.call(this);
             },
             displayState: {
                 set: function(state) {
@@ -1080,14 +1092,14 @@ var zz = new function() {
         Sprite.RENDER = "__zz_sprite_render__";
 
         Sprite.prototype = createClass(DisplayObjectContainer, {
-            removeSelf: function() {
+            discard: function() {
                 this.element.removeChild(this.canvas);
                 this.canvas = null;
                 this.context = null;
                 this.img = null;
                 this.imageData = null;
                 this._originalImageData = null;
-                _zz.DisplayObjectContainer.prototype.removeSelf.call(this);
+                _zz.DisplayObjectContainer.prototype.discard.call(this);
             },
             onEnterFrame: function() {
                 _zz.DisplayObjectContainer.prototype.onEnterFrame.call(this);
@@ -1579,6 +1591,15 @@ var zz = new function() {
                     this.text = this.text;
                 }
             },
+            autoResize: {
+                get: function() {
+                    return this._autoResize;
+                },
+                set: function(auto) {
+                    this._autoResize = auto;
+                    this.text = this.text;
+                }
+            },
             text: {
                 get: function() {
                     return this.element.innerHTML;
@@ -1756,15 +1777,21 @@ var zz = new function() {
             }
             return null;
         },
-        modularize: function(local, global) {
-            var merge = {};
-            for (var key in local) {
-                merge[key] = local[key];
+        modularize: function(properties) {
+            var merged = {};
+            for (var scope in properties) {
+                var props = properties[scope];
+                for (var name in props) {
+                    if (name in merged) {
+                        throw new ZZError("[" + name + "] is duplicate entry.");
+                    }
+                    if (scope == "global") {
+                        _zz[name] = registration[name] = props[name];
+                    }
+                    merged[name] = props[name];
+                }
             }
-            for (key in global) {
-                _zz[key] = registration[key] = merge[key] = global[key];
-            }
-            return merge;
+            return merged;
         }
     };
 

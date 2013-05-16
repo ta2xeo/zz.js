@@ -27,8 +27,7 @@ function main() {
     controller.y = 180;
     controller.setUIPosition([70, 50],
                              [root.width / 2, 100],
-                             [textArea.x, 0]
-                            );
+                             [textArea.x, 0]);
     namePlate.nameColors = {
         "ツチヤ": "#f00",
         "Tsuchiya": "#0f0"
@@ -41,7 +40,7 @@ function main() {
                 path: ROOT_PATH + "img/hoge1.png",
                 x: -50,
                 y: 0,
-                active: true,
+                active: true
             }
         },
         {

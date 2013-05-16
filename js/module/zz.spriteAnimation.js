@@ -270,14 +270,14 @@ zz.spriteAnimation = new function() {
         }
     });
 
-    return zz.modularize(
-        {
+    return zz.modularize({
+        local: {
             setImagePath: setImagePath
         },
-        {
+        global: {
             SpriteEvent: SpriteEvent,
             SpriteAnimation: SpriteAnimation,
             SpriteSheetAnimation: SpriteSheetAnimation
         }
-    );
+    });
 };

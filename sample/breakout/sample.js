@@ -93,7 +93,7 @@ function main() {
             2: {label: "lv2", backgroundColor: colors[1], stop: true},
             3: {label: "lv3", backgroundColor: colors[2], stop: true},
             4: {label: "lv4", backgroundColor: colors[3], stop: true},
-            5: {label: "delete", visible: false, stop: true, event: "destroy"},
+            5: {label: "delete", visible: false, stop: true, event: "destroy"}
         });
         box.hitCheck = function() {
             if ((ball.x + ball.width > box.x) &&
@@ -103,12 +103,12 @@ function main() {
                 moveY = -moveY;
                 box.play();
             }
-        }
+        };
         box.addEventListener("destroy", function() {
-            box.removeSelf();
+            box.discard();
         });
         return box;
-    }
+    };
     var blockContainer = new DisplayObjectContainer();
 
     for (var i = 0; i < 5; i++) {
@@ -149,7 +149,7 @@ function main() {
     var fmt = new TextFormat();
     fmt.bold = true;
     fmt.font = "Impact";
-    fmt.color = "#fff"
+    fmt.color = "#fff";
     fmt.size = 30;
     msgTxt.defaultTextFormat = fmt;
     msgTxt.referencePoint = ReferencePoint.CENTER;
@@ -160,7 +160,7 @@ function main() {
     message.setAnimation({
         1: {alpha: 1, tween: true},
         30: {alpha: 0, tween: true},
-        60: {alpha: 1, tween: true},
+        60: {alpha: 1, tween: true}
     });
 
     function detectCollision() {
@@ -182,8 +182,8 @@ function main() {
         message.visible = false;
     });
 
-    var fps = new FPS();
-    root.addChild(fps);
+    var fps = new FPS(root);
+    fps.text();
 }
 
 window.addEventListener('load', main, false);

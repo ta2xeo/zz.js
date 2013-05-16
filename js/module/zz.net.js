@@ -74,13 +74,13 @@ zz.net = new function() {
         submitForm(url, "GET", data);
     }
 
-    return zz.modularize(
-        {
+    return zz.modularize({
+        local: {
             joinQuery: joinQuery,
             location: location,
             submitForm: submitForm,
             submitFormByPOST: submitFormByPOST,
             submitFormByGET: submitFormByGET
         }
-    );
+    });
 };

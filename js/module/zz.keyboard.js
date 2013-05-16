@@ -76,9 +76,11 @@ zz.keyboard = new function() {
     }
     KeyEventStage.prototype = _Stage.prototype;
 
-    return zz.modularize(null, {
-        Stage: KeyEventStage,
-        Keyboard: Keyboard,
-        KeyboardEvent: KeyboardEvent
+    return zz.modularize({
+        global: {
+            Stage: KeyEventStage,
+            Keyboard: Keyboard,
+            KeyboardEvent: KeyboardEvent
+        }
     });
 };

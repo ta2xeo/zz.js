@@ -931,9 +931,11 @@ zz.debug = new function() {
         return overwrite;
     }
 
-    return zz.modularize(null, {
-        DisplayObject: overwriteClass(zz.DisplayObject, debugDisplayObject),
-        DisplayObjectContainer: overwriteClass(zz.DisplayObjectContainer, debugDisplayObjectContainer),
-        Stage: overwriteClass(zz.Stage, debugStage)
+    return zz.modularize({
+        global: {
+            DisplayObject: overwriteClass(zz.DisplayObject, debugDisplayObject),
+            DisplayObjectContainer: overwriteClass(zz.DisplayObjectContainer, debugDisplayObjectContainer),
+            Stage: overwriteClass(zz.Stage, debugStage)
+        }
     });
 };

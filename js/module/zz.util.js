@@ -290,14 +290,14 @@ zz.util = new function() {
         return list;
     }
 
-    return zz.modularize(
-        {
+    return zz.modularize({
+        local: {
             objectValueToList: objectValueToList
         },
-        {
+        global: {
             LazyMC: LazyMC,
             FPS: FPS,
             Loader: Loader
         }
-    );
+    });
 };

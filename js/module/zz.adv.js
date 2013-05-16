@@ -328,6 +328,9 @@ zz.adv = new function() {
      * @extends DisplayObjectContainer
      */
     function TextArea(width, height, radius) {
+        var offsetX = DEFAULT_TEXT_OFFSET_X;
+        var offsetY = DEFAULT_TEXT_OFFSET_Y;
+
         zz.DisplayObjectContainer.apply(this);
         this.backgroundColor = DEFAULT_BG_COLOR;
         this.alpha = DEFAULT_BG_ALPHA;
@@ -340,8 +343,6 @@ zz.adv = new function() {
         this.text.setSize(width - offsetX, height);
         this.text.textColor = DEFAULT_TEXT_COLOR;
         this.text.style.lineHeight = DEFAULT_TEXT_LINE_HEIGHT;
-        var offsetX = DEFAULT_TEXT_OFFSET_X;
-        var offsetY = DEFAULT_TEXT_OFFSET_Y;
         this.text.style.padding = [
             offsetY + "px",  // ↑
             offsetX + "px",  // ← →
@@ -472,15 +473,14 @@ zz.adv = new function() {
                 self.namePlate.who = name;
             }
             var currentImage = self.images.shift();
-            for (var i = 0, len = self.imageContainer.numChildren; i < len; i++) {
-                var child = self.imageContainer.getChildAt(i);
-                child.removeSelf();
+            while (self.imageContainer.numChildren > 0) {
+                self.imageContainer.getChildAt(0).discard();
             }
             if (currentImage) {
                 if (currentImage instanceof Array === false) {
                     currentImage = [currentImage];
                 }
-                for (i = 0, len = currentImage.length; i < len; i++) {
+                for (var i = 0, len = currentImage.length; i < len; i++) {
                     var image = currentImage[i];
                     self.imageContainer.addChild(new Image(image));
                 }
@@ -542,17 +542,17 @@ zz.adv = new function() {
         }
     });
 
-    return zz.modularize(
-        {
+    return zz.modularize({
+        local: {
             plainTextParser: plainTextParser,
             htmlParser: htmlParser
         },
-        {
+        global: {
             TypewriterEvent: TypewriterEvent,
             Typewriter: Typewriter,
             TextArea: TextArea,
             NamePlate: NamePlate,
             ADVController: ADVController
         }
-    );
+    });
 };
