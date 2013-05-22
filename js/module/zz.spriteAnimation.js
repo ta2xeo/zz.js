@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.7
+ * @version       0.0.8
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -40,16 +40,24 @@ zz.spriteAnimation = new function() {
             this.prefix = _imagePath + prefix;
             this.suffix = suffix;
         },
+        /**
+         * スプライトの枚数
+         */
+        spriteCount: {
+            get: function() {
+                return this.numChildren;
+            }
+        },
         loadComplete: function(spr) {
             var self = this;
             function comp() {
                 ++self.loadCount;
-                if (self.loadCount === self.sprites.length) {
+                if (self.loadCount === self.numChildren) {
                     self.spritesLoaded = true;
                     if (self.autoPlay) {
                         self.gotoAndPlay(self.currentFrame);
                     } else {
-                        var first = self.sprites[0];
+                        var first = self.getChildAt(0);
                         self.setSpriteSize(first);
                     }
                     self.spriteLoaded = true;
@@ -66,14 +74,12 @@ zz.spriteAnimation = new function() {
             if (!(images instanceof Array)) {
                 images = Array.prototype.slice.call(arguments);
             }
-            this.sprites = [];
             this.loadCount = 0;
             var len = images.length;
             for (var i = 0; i < len; i++) {
                 var path = this.prefix + images[i] + this.suffix;
                 var spr = new zz.Sprite(path);
                 spr.visible = false;
-                this.sprites.push(spr);
                 spr.addEventListener(zz.Event.COMPLETE, this.loadComplete(spr));
                 this.addChild(spr);
             }
@@ -163,7 +169,7 @@ zz.spriteAnimation = new function() {
             this.spritesIndices = [];
             var timeLine = 1;
             var interval = 1;
-            for (var i = 0, len = this.numChildren; i < len; i++) {
+            for (var i = 0, len = this.spriteCount; i < len; i++) {
                 this.spritesIndices.push(timeLine);
                 anim[timeLine] = {
                     event: this._changeSprite(i)
@@ -206,17 +212,17 @@ zz.spriteAnimation = new function() {
                 self.loadComplete(spr)();
                 spr.visible = true;
             });
-            this.sprites = [];
-            this.sprites.push(spr);
             this.addChild(spr);
         },
+        spriteCount: {
+            get: function() {
+                return this.chipCount;
+            }
+        },
         _getAnimationData: function() {
-            var anim = {};
-            var timeLine = 1;
-
             var _anim = {};
             var _timeLine = 1;
-            var spr = this.sprites[0];
+            var spr = this.getChildAt(0);
             var w_cnt = spr.width / this.chipWidth << 0;
             var h_cnt = spr.height / this.chipHeight << 0;
             var index = 0;
@@ -236,23 +242,12 @@ zz.spriteAnimation = new function() {
                 }
             }
             spr.setAnimation(_anim);
-
-            var interval = 1;
-            this.spritesIndices = [];
-            for (i = 0; i < this.chipCount; i++) {
-                this.spritesIndices.push(timeLine);
-                anim[timeLine] = {
-                    event: (function() {
-                        var frame = i + 1;
-                        return function() {
-                            spr.setFrame(frame);
-                        };
-                    })()
-                };
-                interval = this.intervalFrames[i] || interval;
-                timeLine += interval;
-            }
-            return anim;
+            return SpriteAnimation.prototype._getAnimationData.call(this);
+        },
+        _changeSprite: function(index) {
+            return function() {
+                this.getChildAt(0).setFrame(index + 1);
+            };
         },
         /**
          * @param {Array of Int} selectSprites zero origin

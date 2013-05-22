@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.5
+ * @version       0.3.6
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -1038,26 +1038,17 @@ var zz = new function() {
          * @constructor
          */
         function Sprite(src, x, y) {
-            this.canvas = document.createElement("canvas");
             _zz.DisplayObjectContainer.apply(this);
-            this.canvas.style.position = "absolute";
-            this.context = this.canvas.getContext("2d");
-            this.element.appendChild(this.canvas);
             if (arguments.length > 0) {
                 this.loadImage(src);
-            } else {
-                this.width = 0;
-                this.height = 0;
-                this.canvas.width = 0;
-                this.canvas.height = 0;
             }
             if (x != undefined && y != undefined) {
                 this.setPosition(x, y);
             }
             this.tx = 0;
             this.ty = 0;
-            this.tw = this._clearWidth = this._width;
-            this.th = this._clearHeight = this._height;
+            this.tw = this._clearWidth = this.width;
+            this.th = this._clearHeight = this.height;
             this.loaded = false;
             this.imageData = null;
             this._originalImageData = null;
@@ -1066,23 +1057,24 @@ var zz = new function() {
             this._green = 100;
             this._blue = 100;
             this._canvasDirty = true;
+            this._canvasResizeDirty = true;
 
             this.addEventListener(Sprite.RENDER, function() {
                 if (this.loaded) {
                     this.context.clearRect(0, 0, this._clearWidth, this._clearHeight);
-                    this._clearWidth = this._width;
-                    this._clearHeight = this._height;
+                    this._clearWidth = this.width;
+                    this._clearHeight = this.height;
                     if (this.imageData) {
                         this.context.putImageData(this.imageData, 0, 0);
                     } else {
-                        this.context.drawImage(this.img, this.tx, this.ty, this.tw, this.th, 0, 0, this._width, this._height);
+                        this.context.drawImage(this.img, this.tx, this.ty, this.tw, this.th, 0, 0, this.width, this.height);
                     }
                 }
             });
 
             this.addEventListener(Event.COMPLETE, function() {
-                this.tw = this._clearWidth = this.canvas.width = this.width = this.img.width;
-                this.th = this._clearHeight = this.canvas.height = this.height = this.img.height;
+                this.tw = this._clearWidth = this.width = this.img.width;
+                this.th = this._clearHeight = this.height = this.img.height;
                 this.referencePoint = this._reference;
                 this.loaded = true;
                 this._canvasDirty = true;
@@ -1093,7 +1085,9 @@ var zz = new function() {
 
         Sprite.prototype = createClass(DisplayObjectContainer, {
             discard: function() {
-                this.element.removeChild(this.canvas);
+                if (this.canvas) {
+                    this.element.removeChild(this.canvas);
+                }
                 this.canvas = null;
                 this.context = null;
                 this.img = null;
@@ -1103,10 +1097,24 @@ var zz = new function() {
             },
             onEnterFrame: function() {
                 _zz.DisplayObjectContainer.prototype.onEnterFrame.call(this);
+                if (this.img && this._canvasResizeDirty) {
+                    this.resetCanvas();
+                    this._canvasResizeDirty = false;
+                }
                 if (this._canvasDirty) {
                     this.dispatchEvent(Sprite.RENDER);
                     this._canvasDirty = false;
                 }
+            },
+            resetCanvas: function() {
+                if (this.canvas) {
+                    this.element.removeChild(this.canvas);
+                }
+                this.canvas = document.createElement("canvas");
+                this.element.appendChild(this.canvas);
+                this.canvas.width = this.width;
+                this.canvas.height = this.height;
+                this.context = this.canvas.getContext("2d");
             },
             tx: {
                 get: function() {
@@ -1135,7 +1143,7 @@ var zz = new function() {
                     if (tw > this._clearWidth) {
                         this._clearWidth = tw;
                     }
-                    this._width = this._tw = tw;
+                    this.width = this._tw = tw;
                 }
             },
             th: {
@@ -1147,7 +1155,7 @@ var zz = new function() {
                     if (th > this._clearHeight) {
                         this._clearHeight = th;
                     }
-                    this._height = this._th = th;
+                    this.height = this._th = th;
                 }
             },
             width: {
@@ -1157,8 +1165,10 @@ var zz = new function() {
                 },
                 set: function(width) {
                     var _super = Object.getOwnPropertyDescriptor(DisplayObject.prototype, "width");
+                    if (width !== this.width) {
+                        this._canvasResizeDirty = true;
+                    }
                     _super.set.call(this, width);
-                    this.canvas.width = width;
                 }
             },
             height: {
@@ -1168,8 +1178,21 @@ var zz = new function() {
                 },
                 set: function(height) {
                     var _super = Object.getOwnPropertyDescriptor(DisplayObject.prototype, "height");
+                    if (height !== this.height) {
+                        this._canvasResizeDirty = true;
+                    }
                     _super.set.call(this, height);
-                    this.canvas.height = height;
+                }
+            },
+            _canvasResizeDirty: {
+                get: function() {
+                    return this.__canvasResizeDirty;
+                },
+                set: function(dirty) {
+                    if (dirty) {
+                        this._canvasDirty = true;
+                    }
+                    this.__canvasResizeDirty = dirty;
                 }
             },
             _canvasDirty: {

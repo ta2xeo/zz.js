@@ -30,10 +30,10 @@ zz.util = new function() {
         run: function() {
             this._running = true;
             function exec(parent) {
-                if (!(parent instanceof zz.MovieClip)) {
+                parent._execute();
+                if (!(parent instanceof zz.DisplayObjectContainer)) {
                     return;
                 }
-                parent._execute();
                 for (var i = 0, len = parent.numChildren; i < len; i++) {
                     var child = parent.getChildAt(i);
                     exec(child);
