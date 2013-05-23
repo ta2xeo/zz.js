@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.6
+ * @version       0.3.7
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -1405,53 +1405,57 @@ var zz = new function() {
              */
             setAnimation: function(data) {
                 this.frames = [undefined];
-                var tweenIndexes = [];
-                for (var time in data) {
-                    if (!this.frames[time]) {
-                        this.frames[time] = {};
-                    }
-                    var d = data[time];
-                    for (var key in d) {
-                        this.frames[time][key] = d[key];
-                        if (key == "tween" && d[key]) {
-                            tweenIndexes.push(time);
-                        }
+                var tweenIndices = [];
+                var sortedFrames = Object.keys(data).sort(function(a, b) {
+                    a = parseInt(a, 10);
+                    b = parseInt(b, 10);
+                    if (a < b) return -1;
+                    if (a > b) return 1;
+                    return 0;
+                });
+                for (var i = 0, len = sortedFrames.length; i < len; i++) {
+                    var frame = parseInt(sortedFrames[i], 10);
+                    var d = data[frame];
+                    this.frames[frame] = d;
+                    if ("tween" in d) {
+                        tweenIndices.push(frame);
                     }
                 }
-                /**
-                 * auto adjustment
-                 * @param {Int} startIndex
-                 */
-                function supplement(startIndex) {
-                    startIndex = parseInt(startIndex, 10);
-                    var start = this.frames[startIndex];
-                    var endIndex = startIndex;
-                    for (var i = startIndex + 1, len = this.frames.length; i < len; i++) {
-                        if (this.frames[i]) {
-                            endIndex = i;
+
+                function interpolate(startFrame, property) {
+                    var val = this.frames[startFrame][property];
+                    for (var i = 0, len = sortedFrames.length; i < len; i++) {
+                        var f = parseInt(sortedFrames[i], 10);
+                        if (f <= startFrame) {
+                            continue;
+                        }
+                        if (this.frames[f][property] !== undefined) {
+                            var size = f - startFrame;
+                            var step = (this.frames[f][property] - val) / size;
+                            for (var frame = startFrame + 1, endFrame = frame + size; frame < endFrame - 1; frame++) {
+                                if (!this.frames[frame]) {
+                                    this.frames[frame] = {};
+                                }
+                                var v = val + (frame - startFrame) * step;
+                                if (property in {x: 1, y: 1, rotation: 1}) {
+                                    v = v << 0;
+                                }
+                                this.frames[frame][property] = v;
+                            }
                             break;
                         }
                     }
-                    if (startIndex != endIndex) {
-                        var end = this.frames[endIndex];
-                        var size = endIndex - startIndex;
-                        for (var key in end) {
-                            if (start[key] != undefined && typeof(start[key]) == "number") {
-                                var val = (end[key] - start[key]) / size;
-                                for (i = startIndex + 1; i < endIndex; i++) {
-                                    if (!this.frames[i]) {
-                                        this.frames[i] = {};
-                                    }
-                                    this.frames[i][key] = this.frames[i - 1][key] + val;
-                                    //console.log(key, i, this.frames[i][key]);
-                                }
-                            }
-                        }
-                    }
                 }
-                for (var i = 0, len = tweenIndexes.length; i < len; i++) {
-                    var index = tweenIndexes[i];
-                    supplement.call(this, index);
+
+                for (i = 0, len = tweenIndices.length; i < len; i++) {
+                    var start = this.frames[tweenIndices[i]];
+                    var tween = start["tween"];
+                    for (var property in start) {
+                        if (tween !== true && tween.indexOf(property) === -1 || typeof start[property] !== "number") {
+                            continue;
+                        }
+                        interpolate.call(this, tweenIndices[i], property);
+                    }
                 }
             },
             _mcDirty: {
