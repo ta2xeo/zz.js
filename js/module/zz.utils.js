@@ -1,5 +1,5 @@
 /** -*- coding: utf-8 -*-
- * zz.util.js
+ * zz.utils.js
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
@@ -8,7 +8,7 @@
  */
 "use strict";
 
-zz.util = new function() {
+zz.utils = new function() {
     /**
      * このクラスに含まれる全オブジェクトのENTER_FRAMEイベントを抑制する。
      * runを呼ぶと動きだす。インスタンス生成が完了してから動かしたい時などに使う。
