@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.7
+ * @version       0.3.8
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -1057,13 +1057,16 @@ var zz = new function() {
             this._green = 100;
             this._blue = 100;
             this._canvasDirty = true;
-            this._canvasResizeDirty = true;
+            this._canvasResizeDirty = false;
 
             this.addEventListener(Sprite.RENDER, function() {
                 if (this.loaded) {
-                    this.context.clearRect(0, 0, this._clearWidth, this._clearHeight);
-                    this._clearWidth = this.width;
-                    this._clearHeight = this.height;
+                    // this.context.clearRect(0, 0, this._clearWidth, this._clearHeight);
+                    // this._clearWidth = this.width;
+                    // this._clearHeight = this.height;
+
+                    this.canvas.width = this.canvas.width;  // above similar
+
                     if (this.imageData) {
                         this.context.putImageData(this.imageData, 0, 0);
                     } else {
@@ -1073,8 +1076,8 @@ var zz = new function() {
             });
 
             this.addEventListener(Event.COMPLETE, function() {
-                this.tw = this._clearWidth = this.width = this.img.width;
-                this.th = this._clearHeight = this.height = this.img.height;
+                this.tw = this._clearWidth = this.img.width;
+                this.th = this._clearHeight = this.img.height;
                 this.referencePoint = this._reference;
                 this.loaded = true;
                 this._canvasDirty = true;
@@ -1097,9 +1100,8 @@ var zz = new function() {
             },
             onEnterFrame: function() {
                 _zz.DisplayObjectContainer.prototype.onEnterFrame.call(this);
-                if (this.img && this._canvasResizeDirty) {
+                if (this._canvasResizeDirty) {
                     this.resetCanvas();
-                    this._canvasResizeDirty = false;
                 }
                 if (this._canvasDirty) {
                     this.dispatchEvent(Sprite.RENDER);
@@ -1111,10 +1113,11 @@ var zz = new function() {
                     this.element.removeChild(this.canvas);
                 }
                 this.canvas = document.createElement("canvas");
-                this.element.appendChild(this.canvas);
+                this.element.insertBefore(this.canvas, this.element.firstChild);
                 this.canvas.width = this.width;
                 this.canvas.height = this.height;
                 this.context = this.canvas.getContext("2d");
+                this._canvasResizeDirty = false;
             },
             tx: {
                 get: function() {
@@ -1165,7 +1168,7 @@ var zz = new function() {
                 },
                 set: function(width) {
                     var _super = Object.getOwnPropertyDescriptor(DisplayObject.prototype, "width");
-                    if (width !== this.width) {
+                    if (this.canvas && width !== this.canvas.width) {
                         this._canvasResizeDirty = true;
                     }
                     _super.set.call(this, width);
@@ -1178,7 +1181,7 @@ var zz = new function() {
                 },
                 set: function(height) {
                     var _super = Object.getOwnPropertyDescriptor(DisplayObject.prototype, "height");
-                    if (height !== this.height) {
+                    if (this.canvas && height !== this.canvas.height) {
                         this._canvasResizeDirty = true;
                     }
                     _super.set.call(this, height);
@@ -1252,6 +1255,9 @@ var zz = new function() {
             },
             loadImage: function(src) {
                 this.loaded = false;
+                if (!this.canvas) {
+                    this.resetCanvas();
+                }
                 var self = this;
                 this.img = _zz.loadImage(src, function(event) {
                     self.dispatchEvent(new Event(Event.COMPLETE));

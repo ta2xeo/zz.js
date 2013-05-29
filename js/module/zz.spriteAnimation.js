@@ -205,6 +205,7 @@ zz.spriteAnimation = new function() {
             var path = this.prefix + sheet + this.suffix;
             var spr = new zz.MovieClip(path);
             spr.visible = false;
+            this.addChild(spr);
             this.loadCount = 0;
             var self = this;
             spr.addEventListener(zz.Event.COMPLETE, function() {
@@ -212,7 +213,6 @@ zz.spriteAnimation = new function() {
                 self.loadComplete(spr)();
                 spr.visible = true;
             });
-            this.addChild(spr);
         },
         spriteCount: {
             get: function() {
