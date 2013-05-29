@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.2
+ * @version       0.0.3
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -382,7 +382,7 @@ zz.transitions = new function() {
             },
             _dispatch: function(motionType) {
                 var e = new TweenEvent(motionType, this.time, this.position);
-                this.obj.dispatchEvent(e);
+                this.dispatchEvent(e);
             },
             _setEasing: function() {
                 this._easingFunc = this._easing();
@@ -482,7 +482,7 @@ zz.transitions = new function() {
      * };
      */
     function tweenObject(obj, animation) {
-        var queue = [];
+        var tweens = [];
         for (var prop in animation) {
             if (animation[prop] === undefined) {
                 continue;
@@ -494,47 +494,88 @@ zz.transitions = new function() {
                 info.begin = obj[prop];
             }
             var tw = new Tween(obj, prop, info.easing, info.begin, info.end, time || 0, isSeconds);
-            queue.push(tw);
+            tweens.push(tw);
             if (info.loop) {
                 tw.looping = true;
             }
             tw.start();
         }
-        return queue;
+        return tweens;
     }
 
 
     /**
-     * メソッドチェーンでアニメーション制御出来るように機能を持たせるクラス
+     * アニメーション制御をメソッドチェーンで指定できるクラス
      *
      * 例)
-     * var obj = new TweenMC("image.png");
-     * obj.tween.fadeIn(48, Linear.easeIn).move(300, 200, 72, Bounce.easeIn).fadeOut(24, Linear.easeOut);
+     * var obj = new MovieClip("image.png");
+     * var tw = new TweeChain(obj);
+     * tw.fadeIn(48, Linear.easeIn).move(300, 200, 72, Bounce.easeIn).fadeOut(24, Linear.easeOut);
      */
     var TweenChain = new function() {
         var TWEEN_END = "__zz.transitions.TweenChain.TWEEN_END__";
+        var TWEEN_NEXT = "__zz.transitions.TweenChain.TWEEN_NEXT__";
 
         function TweenChain(obj) {
             zz.EventDispatcher.call(this);
             this.obj = obj;
             this.queue = [];
-            this.enabled = false;
+            this._multi = false;
+            var taskCount = 0;
+            var doneCount = 0;
             this.addEventListener(TWEEN_END, function() {
-                this.queue.shift();
-                var func = this.queue[0];
-                if (func) {
-                    func.call(this);
+                ++doneCount;
+                if (doneCount === taskCount) {
+                    this.queue.shift();
+                    doneCount = 0;
+                    this.dispatchEvent(TWEEN_NEXT);
+                }
+            });
+            this.addEventListener(TWEEN_NEXT, function() {
+                if (this.queue.length > 0) {
+                    var func = this.queue[0];
+                    if (func instanceof Array) {
+                        taskCount = func.length;
+                        for (var i = 0; i < taskCount; i++) {
+                            func[i]();
+                        }
+                    } else {
+                        taskCount = 1;
+                        func();
+                    }
                 }
             });
         }
         TweenChain.prototype = zz.createClass(zz.EventDispatcher, {
+            /**
+             * これ経由で関数繋げること
+             */
             addQueue: function(func) {
-                this.queue.push(func);
-                if (this.queue.length === 1) {
-                    func.call(this);
+                var self = this;
+
+                function start() {
+                    this.removeEventListener(zz.Event.ENTER_FRAME, start);
+                    self.dispatchEvent(TWEEN_NEXT);
                 }
+
+                if (this.queue.length === 0) {
+                    this.obj.addEventListener(zz.Event.ENTER_FRAME, start);
+                }
+
+                if (this._multi) {
+                    var last = this.queue[this.queue.length - 1];
+                    last.push(func);
+                    this._multi = false;
+                } else {
+                    this.queue.push(func);
+                }
+
                 return this;
             },
+            /**
+             * tweenObjectを実行する
+             * @params {Object} params tweenObjectのanimation
+             */
             tween: function(params) {
                 return this.addQueue(function() {
                     var tws = tweenObject(this.obj, params);
@@ -545,15 +586,59 @@ zz.transitions = new function() {
                         return function count() {
                             ++finished;
                             this.removeEventListener(TweenEvent.MOTION_FINISH, count);
-                            if (finished >= len) {
+                            if (finished === len) {
                                 chain.dispatchEvent(TWEEN_END);
                             }
                         };
                     }
                     for (var i = 0; i < len; i++) {
-                        this.obj.addEventListener(TweenEvent.MOTION_FINISH, finish());
+                        var tw = tws[i];
+                        tw.addEventListener(TweenEvent.MOTION_FINISH, finish());
                     }
-                });
+                }.bind(this));
+            },
+            /**
+             * 渡した関数を実行する
+             * 実行と同時に次のイベント呼ぶ
+             */
+            exec: function(func) {
+                function execute() {
+                    func();
+                    this.dispatchEvent(TWEEN_END);
+                }
+                return this.addQueue(execute.bind(this));
+            },
+            /**
+             * 指定したフレーム数待機する
+             * @params {Int} frame 待機させたいフレーム数
+             */
+            wait: function(frame) {
+                return this.addQueue(function() {
+                    var cnt = 0;
+                    var count = function() {
+                        ++cnt;
+                        if (cnt >= frame) {
+                            this.dispatchEvent(TWEEN_END);
+                            this.obj.removeEventListener(zz.Event.ENTER_FRAME, count);
+                        }
+                    }.bind(this);
+                    this.obj.addEventListener(zz.Event.ENTER_FRAME, count);
+                }.bind(this));
+            },
+            /**
+             * .and()で繋げると続けて実行出来る。
+             * 例)
+             * // 360度回転しつつx:300に移動する
+             * obj.tween.moveX(300, 30).and().rotate(360, 30);
+             */
+            and: function() {
+                this._multi = true;
+                var last = this.queue.pop();
+                if (!(last instanceof Array)) {
+                    last = [last];
+                }
+                this.queue.push(last);
+                return this;
             },
             move: function(x, y, frame, easing) {
                 return this.tween({
@@ -632,6 +717,10 @@ zz.transitions = new function() {
 
     /**
      * TweenChainを予め内包したMovieClip
+     *
+     * 例)
+     * var obj = new TweenMC("image.png");
+     * obj.tween.fadeIn(48, Linear.easeIn).move(300, 200, 72, Bounce.easeIn).fadeOut(24, Linear.easeOut);
      */
     var TweenMC = new function() {
         function TweenMC() {
