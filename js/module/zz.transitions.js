@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.3
+ * @version       0.0.4
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -520,6 +520,7 @@ zz.transitions = new function() {
             zz.EventDispatcher.call(this);
             this.obj = obj;
             this.queue = [];
+            this._loop = [];
             this._multi = false;
             var taskCount = 0;
             var doneCount = 0;
@@ -532,7 +533,7 @@ zz.transitions = new function() {
                 }
             });
             this.addEventListener(TWEEN_NEXT, function() {
-                if (this.queue.length > 0) {
+                function execNextQueue() {
                     var func = this.queue[0];
                     if (func instanceof Array) {
                         taskCount = func.length;
@@ -542,6 +543,14 @@ zz.transitions = new function() {
                     } else {
                         taskCount = 1;
                         func();
+                    }
+                }
+                if (this.queue.length > 0) {
+                    execNextQueue.call(this);
+                } else {
+                    if (this._loop.length > 0) {
+                        this.queue = Array.apply(null, this._loop);  // shallow copy
+                        execNextQueue.call(this);
                     }
                 }
             });
@@ -596,6 +605,27 @@ zz.transitions = new function() {
                         tw.addEventListener(TweenEvent.MOTION_FINISH, finish());
                     }
                 }.bind(this));
+            },
+            /**
+             * 同じフレーム数で複数のトゥイーンを一括指定したいときに使う
+             * @param {Object} params
+             * {
+             *   x: 30,
+             *   y: 50
+             * }
+             * @param {Int} frame フレーム数
+             * @param {Function} easing イージング関数
+             */
+            packTween: function(params, frame, easing) {
+                var convert = {};
+                for (var prop in params) {
+                    convert[prop] = {
+                        end: params[prop],
+                        frame: frame,
+                        easing: easing
+                    };
+                }
+                return this.tween(convert);
             },
             /**
              * 渡した関数を実行する
@@ -709,6 +739,45 @@ zz.transitions = new function() {
                         easing: easing
                     }
                 });
+            },
+            scaleX: function(scale, frame, easing) {
+                return this.tween({
+                    scaleX: {
+                        end: scale,
+                        frame: frame,
+                        easing: easing
+                    }
+                });
+            },
+            scaleY: function(scale, frame, easing) {
+                return this.tween({
+                    scaleY: {
+                        end: scale,
+                        frame: frame,
+                        easing: easing
+                    }
+                });
+            },
+            show: function() {
+                return this.addQueue(function() {
+                    this.obj.visible = true;
+                    this.dispatchEvent(TWEEN_END);
+                }.bind(this));
+            },
+            hide: function() {
+                return this.addQueue(function() {
+                    this.obj.visible = false;
+                    this.dispatchEvent(TWEEN_END);
+                }.bind(this));
+            },
+            loop: function() {
+                this._loop = Array.apply(null, this.queue);  // shallow copy
+                return this;
+            },
+            remove: function() {
+                return this.addQueue(function() {
+                    this.obj.removeSelf();
+                }.bind(this));
             }
         });
         return TweenChain;
