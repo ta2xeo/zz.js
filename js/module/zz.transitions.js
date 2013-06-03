@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.4
+ * @version       0.0.5
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -368,6 +368,7 @@ zz.transitions = new function() {
             this.looping = false;
             this.time = 0;
             this._easingFunc = null;
+            this._isYoyo = false;
         }
         Tween.prototype = zz.createClass(zz.EventDispatcher, {
             start: function() {
@@ -388,48 +389,17 @@ zz.transitions = new function() {
                 this._easingFunc = this._easing();
                 this.obj.addEventListener(zz.Event.ENTER_FRAME, this._easingFunc);
             },
+            _setVal: function(val) {
+                if (this.prop in this.obj) {
+                    this.obj[this.prop] = val;
+                }
+            },
             _easing: function() {
                 if (this._easingFunc) {
                     this.obj.removeEventListener(zz.Event.ENTER_FRAME, this._easingFunc);
                 }
                 this.isPlaying = true;
-                var self = this;
-
-                function setVal(val) {
-                    if (self.prop in self.obj) {
-                        self.obj[self.prop] = val;
-                    }
-                }
-
-                function easing() {
-                    if (self.time === 0) {
-                        self._dispatch(TweenEvent.MOTION_START);
-                    }
-                    self.time = self.useSeconds ? performance.now() - self._start : self.time + 1;
-                    var v = self.func(self.time, self.begin, self.finish - self.begin, self.duration);
-                    if (self.time < self.duration) {
-                        setVal(v);
-                    } else {
-                        if (self.reset) {
-                            self.reset = false;
-                            setVal(self.begin);
-                            self.time = 0;
-                            self._start = self.useSeconds ? performance.now() : 0;
-                            self._dispatch(TweenEvent.MOTION_LOOP);
-                        } else {
-                            setVal(self.finish);
-                            if (!self.looping) {
-                                this.removeEventListener(zz.Event.ENTER_FRAME, easing);
-                                self.isPlaying = false;
-                            } else {
-                                self.reset = true;
-                            }
-                            self._dispatch(TweenEvent.MOTION_FINISH);
-                        }
-                    }
-                    self._dispatch(TweenEvent.MOTION_CHANGE);
-                }
-                return easing;
+                return this.nextFrame.bind(this);
             },
             stop: function() {
                 this.isPlaying = false;
@@ -453,6 +423,79 @@ zz.transitions = new function() {
                 set: function(value) {
                     this.obj[this.prop] = value;
                 }
+            },
+            _moveFrame: function(fowardFunc) {
+                if (this.time === 0) {
+                    this._dispatch(TweenEvent.MOTION_START);
+                    this._setVal(this._isYoyo ? this.finish : this.begin);
+                }
+                fowardFunc();
+                var time = this._isYoyo ? this.duration - this.time : this.time;
+                var v = this.func(time, this.begin, this.finish - this.begin, this.duration);
+                if (this.time < this.duration) {
+                    this._setVal(v);
+                } else {
+                    if (this.reset) {
+                        this.reset = false;
+                        this._setVal(this._isYoyo ? this.finish : this.begin);
+                        this.time = 0;
+                        this._start = this.useSeconds ? performance.now() : 0;
+                        this._dispatch(TweenEvent.MOTION_LOOP);
+                    } else {
+                        this._setVal(this._isYoyo ? this.begin : this.finish);
+                        if (!this.looping) {
+                            this.obj.removeEventListener(zz.Event.ENTER_FRAME, this._easingFunc);
+                            this.isPlaying = false;
+                        } else {
+                            this.reset = true;
+                        }
+                        this._dispatch(TweenEvent.MOTION_FINISH);
+                    }
+                }
+                this._dispatch(TweenEvent.MOTION_CHANGE);
+            },
+            /**
+             * 次のフレームへ進める。
+             */
+            nextFrame: function() {
+                function next() {
+                    this.time = this.useSeconds ? performance.now() - this._start : this.time + 1;
+                }
+                this._moveFrame(next.bind(this));
+            },
+            /**
+             * 前のフレームに戻す。
+             */
+            prevFrame: function() {
+                function prev() {
+                    this.time = this.useSeconds ? performance.now() + this._start : this.time - 1;
+                }
+                this._moveFrame(prev.bind(this));
+            },
+            /**
+             * 最後まで早送りします。
+             */
+            fforward: function() {
+                var enable = true;
+
+                function stop() {
+                    this.removeEventListener(TweenEvent.MOTION_FINISH, stop);
+                    enable = false;
+                }
+
+                this.addEventListener(TweenEvent.MOTION_FINISH, stop);
+
+                while (enable) {
+                    this.nextFrame();
+                }
+            },
+            /**
+             * 逆再生。
+             */
+            yoyo: function() {
+                this._isYoyo ^= true;
+                this._setEasing();
+                this.time = 0;
             }
         });
         return Tween;
@@ -522,6 +565,7 @@ zz.transitions = new function() {
             this.queue = [];
             this._loop = [];
             this._multi = false;
+            this._tweens = [];
             var taskCount = 0;
             var doneCount = 0;
             this.addEventListener(TWEEN_END, function() {
@@ -530,6 +574,7 @@ zz.transitions = new function() {
                     this.queue.shift();
                     doneCount = 0;
                     this.dispatchEvent(TWEEN_NEXT);
+                    this._tweens = [];
                 }
             });
             this.addEventListener(TWEEN_NEXT, function() {
@@ -588,6 +633,7 @@ zz.transitions = new function() {
             tween: function(params) {
                 return this.addQueue(function() {
                     var tws = tweenObject(this.obj, params);
+                    this._tweens.push(tws);
                     var len = tws.length;
                     var finished = 0;
                     var chain = this;
@@ -604,6 +650,25 @@ zz.transitions = new function() {
                         var tw = tws[i];
                         tw.addEventListener(TweenEvent.MOTION_FINISH, finish());
                     }
+                }.bind(this));
+            },
+            /**
+             * 指定したフレーム数スキップする。
+             * .and()は省略可能。
+             */
+            skip: function(frame) {
+                this.and();
+                return this.addQueue(function() {
+                    var len = this._tweens.length;
+                    for (var i = 0; i < len; i++) {
+                        var tw = this._tweens[i];
+                        for (var j = 0, size = tw.length; j < size; j++) {
+                            for (var k = 0; k < frame; k++) {
+                                tw[j].nextFrame();
+                            }
+                        }
+                    }
+                    this.dispatchEvent(TWEEN_END);
                 }.bind(this));
             },
             /**
