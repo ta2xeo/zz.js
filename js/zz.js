@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.8
+ * @version       0.3.9
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -379,19 +379,10 @@ var zz = new function() {
             this._removed = false;
             this._deleted = false;
             this._execution = false;
-            var self = this;
-
-            for (var eventName in TouchEvent) {
-                this.element["on" + TouchEvent[eventName]] = function(event) {
-                    if (self.enabled) {
-                        dispatch(event, self);
-                    }
-                };
-            }
         }
 
-        function dispatch(event, self) {
-            var rect = self.element.getBoundingClientRect();
+        function dispatch(event) {
+            var rect = this.element.getBoundingClientRect();
             var e = new Event(event.type);
             e.ctrlKey = event.ctrlKey;
             e.altKey = event.altKey;
@@ -399,17 +390,17 @@ var zz = new function() {
             if (ENV.TOUCH_ENABLED) {
                 if (event.touches.length) {
                     e.x = event.touches[0].clientX - rect.left << 0;
-                    e.globalX = e.x + self.x;
+                    e.globalX = e.x + this.x;
                     e.y = event.touches[0].clientY - rect.top << 0;
-                    e.globalY = e.y + self.y;
+                    e.globalY = e.y + this.y;
                 }
             } else {
                 e.x = event.clientX - rect.left << 0;
-                e.globalX = e.x + self.x;
+                e.globalX = e.x + this.x;
                 e.y = event.clientY - rect.top << 0;
-                e.globalY = e.y + self.y;
+                e.globalY = e.y + this.y;
             }
-            var stop = self.dispatchEvent(e);
+            var stop = this.dispatchEvent(e);
             if (stop) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -441,6 +432,32 @@ var zz = new function() {
                 _zz.EventDispatcher.prototype.addEventListener.apply(this, arguments);
                 if (eventName == Event.ENTER_FRAME) {
                     this._execute();
+                }
+                for (var key in TouchEvent) {
+                    var name = TouchEvent[key];
+                    if (eventName !== name) {
+                        continue;
+                    }
+                    if (!this.element["on" + name]) {
+                        this.element["on" + name] = function(event) {
+                            if (this.enabled) {
+                                dispatch.call(this, event);
+                            }
+                        }.bind(this);
+                    }
+                }
+
+            },
+            removeEventListener: function(eventName, listener) {
+                _zz.EventDispatcher.prototype.removeEventListener.apply(this, arguments);
+                for (var key in TouchEvent) {
+                    var name = TouchEvent[key];
+                    if (eventName !== name) {
+                        continue;
+                    }
+                    if (!(name in this.eventContainer)) {
+                        this.element["on" + name] = null;
+                    }
                 }
             },
             dispatchEvent: function(event) {
