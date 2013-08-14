@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.9
+ * @version       0.3.10
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -1604,7 +1604,7 @@ var zz = new function() {
          * create element to get text size.
          */
         var ruler;
-        var addWidth = ENV.RENDERING_ENGINE == "Gecko" ? 1 : 0;
+        var addWidth = 1;
         window.addEventListener("load", function(e) {
             ruler = document.createElement("span");
             ruler.style.visibility = "hidden";
