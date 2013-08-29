@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.10
+ * @version       0.3.11
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -37,6 +37,8 @@ var zz = new function() {
                 return setTimeout(callback, delay);
             };
         }());
+
+    var INTERRUPT_ON_ERROR = false;
 
     var DEFAULT_FRAMERATE = 30;
 
@@ -1771,7 +1773,11 @@ var zz = new function() {
                         img.src = src;
                     }, delay);
                 } else {
-                    throw new ZZError('Could not load image files: ' + src);
+                    if (INTERRUPT_ON_ERROR) {
+                        throw new ZZError('Could not load image files: ' + src);
+                    } else if (typeof callback == "function") {
+                        callback(event);
+                    }
                 }
             };
 
