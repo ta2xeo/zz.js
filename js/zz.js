@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.11
+ * @version       0.3.12
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -1639,6 +1639,7 @@ var zz = new function() {
                     this.style.fontWeight = fmt.bold ? "bold" : "normal";
                     this.style.fontStyle = fmt.italic ? "italic" : "normal";
                     this.style.fontSize = fmt.size ? fmt.size + "px" : "";
+                    this.style.lineHeight = this.style.fontSize;
                     this.style.color = fmt.color;
                     this.text = this.text;
                 }
@@ -1663,6 +1664,7 @@ var zz = new function() {
                         s.fontWeight = this.style.fontWeight;
                         s.fontStyle = this.style.fontStyle;
                         s.fontSize = this.style.fontSize;
+                        s.lineHeight = s.fontSize;
                         ruler.innerHTML = text;
                         this.setSize(ruler.scrollWidth + addWidth, ruler.scrollHeight);
                         this.element.innerHTML = text;
