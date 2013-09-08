@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.1
+ * @version       0.0.3
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -84,6 +84,7 @@ zz.utils = new function() {
             x = x || 0;
             y = y || 0;
             var text = new zz.TextField();
+            text.autoSize = zz.TextFieldAutoSize.LEFT;
             text.setPosition(x, y);
             text.style.textShadow = "-1px -1px 1px #000, 1px -1px 1px #000, -1px 1px 1px #000, 1px 1px 1px #000";
             var fmt = new zz.TextFormat();
@@ -202,7 +203,6 @@ zz.utils = new function() {
              */
             showDefaultProgress: function() {
                 var stage = new zz.Stage("__zz_loader_default_progress__");
-                stage.setSize(200, 200);
                 stage.style.position = "absolute";
                 var fmt = new zz.TextFormat();
                 fmt.color = "#ddd";
@@ -210,6 +210,7 @@ zz.utils = new function() {
                 fmt.font = "sans-serif";
                 fmt.bold = true;
                 var text = new zz.TextField("0%");
+                text.autoSize = zz.TextFieldAutoSize.RIGHT;
                 text.setPosition(120, 10);
                 text.referencePoint = zz.ReferencePoint.RIGHT_TOP;
                 text.defaultTextFormat = fmt;
@@ -224,14 +225,15 @@ zz.utils = new function() {
                     }
                 }
                 this.progress = defaultProgress;
+                return stage;
             },
-            showDefaultLoadingIcon: function(color) {
+            showDefaultLoadingIcon: function(color, x, y) {
                 var stage = new zz.Stage("__zz_loader_default_loading_icon__");
                 var W = 140;
                 var H = 140;
                 stage.referencePoint = zz.ReferencePoint.CENTER;
                 stage.style.position = "absolute";
-                stage.setPosition(stage.width / 2, stage.height / 2);
+                stage.setPosition(x || stage.width / 2, y || stage.height / 2);
                 stage.setSize(W, H);
                 var cnt = 0;
                 stage.addEventListener(Event.ENTER_FRAME, function() {
@@ -266,10 +268,12 @@ zz.utils = new function() {
                     }
                 }
                 this.progress = removeIcon;
+                return stage;
             }
         });
         return Loader;
     };
+
 
     /**
      * オブジェクトのvalue値を一次元配列に変換する。
@@ -290,6 +294,36 @@ zz.utils = new function() {
         return list;
     }
 
+
+    /**
+     * データを保存する。localStorageを使用してる。
+     * valueはjsonエンコードするのでObjectでも指定できる。
+     * 当たり前だけどブラウザのデータ消せば保存したものは消えるので使い道には注意。
+     */
+    function saveData(key, value) {
+        var json = JSON.stringify(value);
+        window.localStorage.setItem(key, json);
+    }
+
+
+    /**
+     * データをロードする。
+     * ロードしたデータはjsonデコードして返す。
+     */
+    function loadData(key) {
+        var json = window.localStorage.getItem(key);
+        return JSON.parse(json);
+    }
+
+
+    /**
+     * データの削除
+     */
+    function deleteData(key) {
+        window.localStorage.removeItem(key);
+    }
+
+
     return zz.modularize({
         local: {
             objectValueToList: objectValueToList
@@ -297,7 +331,10 @@ zz.utils = new function() {
         global: {
             LazyMC: LazyMC,
             FPS: FPS,
-            Loader: Loader
+            Loader: Loader,
+            saveData: saveData,
+            loadData: loadData,
+            deleteData: deleteData
         }
     });
 };

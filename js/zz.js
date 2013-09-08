@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.3.12
+ * @version       0.4.0
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -362,7 +362,6 @@ var zz = new function() {
             if (ENV.OS == "Android" && ENV.VERSION >= 4.1) {
                 this.style[PREFIX + "BackfaceVisibility"] = "hidden";
             }
-            this.style.textAlign = "left";
             this.name = "";
             this.parent = null;
             this.x = 0;
@@ -1583,6 +1582,13 @@ var zz = new function() {
         return MovieClip;
     };
 
+    var TextFormatAlign = {
+        CENTER: "center",
+        JUSTIFY: "justify",
+        LEFT: "left",
+        RIGHT: "right"
+    };
+
     /**
      * TextFormat
      */
@@ -1593,8 +1599,17 @@ var zz = new function() {
             this.italic = false;
             this.size = null;
             this.color = "";
+            this.leading = null;
+            this.align = null;
         }
         return TextFormat;
+    };
+
+    var TextFieldAutoSize = {
+        CENTER: "center",
+        LEFT: "left",
+        NONE: "none",
+        RIGHT: "right"
     };
 
     /**
@@ -1606,7 +1621,6 @@ var zz = new function() {
          * create element to get text size.
          */
         var ruler;
-        var addWidth = 1;
         window.addEventListener("load", function(e) {
             ruler = document.createElement("span");
             ruler.style.visibility = "hidden";
@@ -1626,31 +1640,76 @@ var zz = new function() {
             this.style.visibility = "hidden";
             this.style.display = "block";
             this.visible = true;
-            this.autoResize = true;
+            this.wordWrap = false;
+            this.autoSize = TextFieldAutoSize.NONE;
         }
         TextField.prototype = createClass(DisplayObject, {
+            wordWrap: {
+                get: function() {
+                    return this.style.whiteSpace == "normal";
+                },
+                set: function(wrap) {
+                    ruler.style.whiteSpace = wrap ? "normal" : "nowrap";
+                    this.style.whiteSpace = ruler.style.whiteSpace;
+                }
+            },
+            autoSize: {
+                get: function() {
+                    return this._autoSize;
+                },
+                set: function(value) {
+                    this._autoSize = value;
+                    switch (value) {
+                    case TextFieldAutoSize.CENTER:
+                        this.style.textAlign = ruler.style.textAlign = TextFormatAlign.CENTER;
+                        break;
+                    case TextFieldAutoSize.LEFT:
+                        this.style.textAlign = ruler.style.textAlign = TextFormatAlign.LEFT;
+                        break;
+                    case TextFieldAutoSize.NONE:
+                        this.style.textAlign = ruler.style.textAlign = TextFormatAlign.LEFT;
+                        break;
+                    case TextFieldAutoSize.RIGHT:
+                        this.style.textAlign = ruler.style.textAlign = TextFormatAlign.RIGHT;
+                        break;
+                    default:
+                        throw new ZZError(value + "is invalid argument.");
+                        break;
+                    }
+                    this.text = this.text;
+                }
+            },
             defaultTextFormat: {
                 get: function() {
                     return this._defaultTextFormat;
                 },
                 set: function(fmt) {
                     this._defaultTextFormat = fmt;
+                    if (fmt.align) {
+                        this.style.textAlign = fmt.align;
+                    }
                     this.style.fontFamily = fmt.font;
                     this.style.fontWeight = fmt.bold ? "bold" : "normal";
                     this.style.fontStyle = fmt.italic ? "italic" : "normal";
                     this.style.fontSize = fmt.size ? fmt.size + "px" : "";
-                    this.style.lineHeight = this.style.fontSize;
+                    this.style.lineHeight = fmt.size ? (fmt.size + (fmt.leading || 0) * 2) + "px" : "";
                     this.style.color = fmt.color;
                     this.text = this.text;
                 }
             },
-            autoResize: {
+            width: {
                 get: function() {
-                    return this._autoResize;
+                    var _super = Object.getOwnPropertyDescriptor(DisplayObject.prototype, "width");
+                    return _super.get.call(this);
                 },
-                set: function(auto) {
-                    this._autoResize = auto;
-                    this.text = this.text;
+                set: function(width) {
+                    if (this.autoSize !== TextFieldAutoSize.NONE && this.wordWrap) {
+                        ruler.style.width = width + "px";
+                    } else {
+                        ruler.style.width = "";
+                    }
+                    var _super = Object.getOwnPropertyDescriptor(DisplayObject.prototype, "width");
+                    _super.set.call(this, width);
                 }
             },
             text: {
@@ -1658,18 +1717,18 @@ var zz = new function() {
                     return this.element.innerHTML;
                 },
                 set: function(text) {
-                    if (this.autoResize) {
+                    if (this.autoSize === TextFieldAutoSize.NONE) {
+                        this.element.innerHTML = ruler.innerHTML = text;
+                    } else {
                         var s = ruler.style;
                         s.fontFamily = this.style.fontFamily;
                         s.fontWeight = this.style.fontWeight;
                         s.fontStyle = this.style.fontStyle;
                         s.fontSize = this.style.fontSize;
-                        s.lineHeight = s.fontSize;
+                        s.lineHeight = this.style.lineHeight;
                         ruler.innerHTML = text;
-                        this.setSize(ruler.scrollWidth + addWidth, ruler.scrollHeight);
+                        this.setSize(ruler.scrollWidth, ruler.scrollHeight);
                         this.element.innerHTML = text;
-                    } else {
-                        this.element.innerHTML = ruler.innerHTML = text;
                     }
                 }
             },
@@ -1716,7 +1775,9 @@ var zz = new function() {
         Stage: Stage,
         Sprite: Sprite,
         MovieClip: MovieClip,
+        TextFormatAlign: TextFormatAlign,
         TextFormat: TextFormat,
+        TextFieldAutoSize: TextFieldAutoSize,
         TextField: TextField
     };
 
