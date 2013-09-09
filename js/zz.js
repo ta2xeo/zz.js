@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.4.0
+ * @version       0.4.1
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -1911,6 +1911,66 @@ var zz = new function() {
                 }
             }
             return merged;
+        },
+        /**
+         * The data object converts to get parameters.
+         */
+        joinQuery: function(url, data) {
+            var params = [];
+            for (var key in data) {
+                params.push(key + "=" + encodeURIComponent(data[key]));
+            }
+            if (params.length === 0) {
+                return url;
+            }
+            var query = params.join("&");
+            if (url.indexOf("?") != -1) {
+                url += "&" + query;
+            } else {
+                url += "?" + query;
+            }
+            return url;
+        },
+        /**
+         * jump by GET.
+         */
+        location: function(url, data) {
+            window.location.href = _zz.joinQuery(url, data);
+        },
+        /**
+         * submit form
+         * @param {String} method default is POST
+         * The data of arguments is hash object.
+         * @example
+         * var data = {
+         *     "text": "sample",
+         *     "id": 1,
+         * };
+         * same below.
+         * <form method="POST" action=[url]>
+         *   <input type="hidden" value="sample" name="text" />
+         *   <input type="hidden" value="1" name="id" />
+         * </form>
+         */
+        submitForm: function(url, method, data) {
+            var form = document.createElement('form');
+            document.body.appendChild(form);
+            for (var key in data) {
+                var input = document.createElement('input');
+                input.setAttribute('type', 'hidden');
+                input.setAttribute('name', key);
+                input.setAttribute('value', data[key]);
+                form.appendChild(input);
+            }
+            form.setAttribute('action', url);
+            form.setAttribute('method', method);
+            form.submit();
+        },
+        submitFormByPOST: function(url, data) {
+            submitForm(url, "POST", data);
+        },
+        submitFormByGET: function(url, data) {
+            submitForm(url, "GET", data);
         }
     };
 
