@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.0.3
+ * @version       0.0.4
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -284,9 +284,9 @@ zz.utils = new function() {
         (function append(o) {
             for (var k in o) {
                 var src = o[k];
-                if (src instanceof Object) {
+                if (typeof src === "object") {
                     append(src);
-                } else {
+                } else if (typeof src === "string") {
                     list.push(src);
                 }
             }

@@ -3,7 +3,7 @@
  * @copyright     2012 Tatsuji Tsuchiya
  * @author        <a href="mailto:ta2xeo@gmail.com">Tatsuji Tsuchiya</a>
  * @license       The MIT License http://www.opensource.org/licenses/mit-license.php
- * @version       0.4.1
+ * @version       0.4.2
  * @see           <a href="https://bitbucket.org/ta2xeo/zz.js">zz.js</a>
  */
 "use strict";
@@ -37,6 +37,16 @@ var zz = new function() {
                 return setTimeout(callback, delay);
             };
         }());
+
+    if (typeof Function.prototype.bind !== "function") {
+        Function.prototype.bind = function(bind) {
+            var self = this;
+            return function() {
+                var args = Array.prototype.slice.call(arguments);
+                return self.apply(bind || null, args);
+            };
+        };
+    }
 
     var INTERRUPT_ON_ERROR = false;
 
@@ -359,7 +369,7 @@ var zz = new function() {
             this.style[PREFIX + "TapHighlightColor"] = "rgba(0,0,0,0)";
             this.style[PREFIX + "TouchCallout"] = "none";
             this.style[PREFIX + "UserSelect"] = "none";
-            if (ENV.OS == "Android" && ENV.VERSION >= 4.1) {
+            if (ENV.OS !== "Android" || ENV.VERSION >= 4.1) {
                 this.style[PREFIX + "BackfaceVisibility"] = "hidden";
             }
             this.name = "";
